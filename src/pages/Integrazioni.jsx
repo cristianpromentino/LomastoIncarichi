@@ -60,7 +60,7 @@ export default function Integrazioni() {
     setLoading(false)
   }
 
-  function mapPersona(p, stato, daneaIdMap) {
+  function mapPersona(p, stato, condominio_id) {
     const emails = Array.isArray(p.email) ? p.email : (p.email ? [p.email] : [])
     return {
       nome_completo: (p.descr || '').trim(),
@@ -71,7 +71,7 @@ export default function Integrazioni() {
       email2: emails[1] || null,
       note: p.note || null,
       stato,
-      condominio_id: p.CondGendID ? (daneaIdMap[p.CondGendID] || null) : null,
+      condominio_id: condominio_id || null,
     }
   }
 
@@ -80,33 +80,40 @@ export default function Integrazioni() {
     setSyncResultPersone(null)
     setError(null)
     try {
-      const { data: edificiDb } = await supabase.from('edifici').select('id, danea_id')
-      const daneaIdMap = {}
-      if (edificiDb) edificiDb.forEach(e => { if (e.danea_id) daneaIdMap[e.danea_id] = e.id })
+      // 1. Prendi condomini con danea_id dal nostro DB
+      const { data: edificiDb } = await supabase.from('edifici').select('id, danea_id, nome').not('danea_id', 'is', null)
+      if (!edificiDb || edificiDb.length === 0) throw new Error('Nessun condominio con danea_id trovato. Sincronizza prima i condomini.')
 
-      const [dataAttivi, dataEx] = await Promise.all([
-        callDanea('/api/external/persona', { FiltroSubentri: 2 }),
-        callDanea('/api/external/persona', { FiltroSubentri: 3 }),
-      ])
+      let totaleAttivi = 0
+      let totaleEx = 0
+      let totaleInseriti = 0
 
-      if (dataAttivi?.status !== 200) throw new Error(`Danea errore attivi: ${dataAttivi?.status}`)
-      if (dataEx?.status !== 200) throw new Error(`Danea errore ex: ${dataEx?.status}`)
+      // 2. Per ogni condominio chiama Danea
+      for (const edificio of edificiDb) {
+        const [dataAttivi, dataEx] = await Promise.all([
+          callDanea('/api/external/persona', { CondGendID: edificio.danea_id, FiltroSubentri: 2 }),
+          callDanea('/api/external/persona', { CondGendID: edificio.danea_id, FiltroSubentri: 3 }),
+        ])
 
-      const attivi = (dataAttivi.data || []).map(p => mapPersona(p, 'attivo', daneaIdMap))
-      const ex = (dataEx.data || []).map(p => mapPersona(p, 'ex', daneaIdMap))
-      const tutte = [...attivi, ...ex].filter(p => p.nome_completo)
+        const attivi = dataAttivi?.status === 200 ? (dataAttivi.data || []).map(p => mapPersona(p, 'attivo', edificio.id)) : []
+        const ex = dataEx?.status === 200 ? (dataEx.data || []).map(p => mapPersona(p, 'ex', edificio.id)) : []
+        const tutte = [...attivi, ...ex].filter(p => p.nome_completo)
 
-      let inseriti = 0
-      const chunks = []
-      for (let i = 0; i < tutte.length; i += 50) chunks.push(tutte.slice(i, i + 50))
-      for (const chunk of chunks) {
-        const { error } = await supabase.from('condòmini').insert(chunk)
-        if (!error) inseriti += chunk.length
-        else console.error('Sync persone error:', error.message)
+        totaleAttivi += attivi.length
+        totaleEx += ex.length
+
+        // 3. Insert in batch
+        const chunks = []
+        for (let i = 0; i < tutte.length; i += 50) chunks.push(tutte.slice(i, i + 50))
+        for (const chunk of chunks) {
+          const { error } = await supabase.from('condòmini').insert(chunk)
+          if (!error) totaleInseriti += chunk.length
+          else console.error('Sync persone error:', error.message)
+        }
       }
 
-      setSyncResultPersone({ totale: tutte.length, attivi: attivi.length, ex: ex.length, inseriti })
-      showToast(`✓ ${inseriti} persone sincronizzate da Danea`, 'success')
+      setSyncResultPersone({ totale: totaleAttivi + totaleEx, attivi: totaleAttivi, ex: totaleEx, inseriti: totaleInseriti })
+      showToast(`✓ ${totaleInseriti} persone sincronizzate da Danea`, 'success')
     } catch (e) {
       setError(e.message)
       showToast('Errore sync persone: ' + e.message, 'error')
