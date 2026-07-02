@@ -12,9 +12,11 @@ function shouldSkip(intestazione) {
 export default function Integrazioni() {
   const { showToast } = useApp()
   const [loading, setLoading] = useState(false)
-  const [syncing, setSyncing] = useState(false)
+  const [syncingPersone, setSyncingPersone] = useState(false)
+  const [syncingCondomini, setSyncingCondomini] = useState(false)
   const [result, setResult] = useState(null)
-  const [syncResult, setSyncResult] = useState(null)
+  const [syncResultPersone, setSyncResultPersone] = useState(null)
+  const [syncResultCondomini, setSyncResultCondomini] = useState(null)
   const [error, setError] = useState(null)
   const [selectedEndpoint, setSelectedEndpoint] = useState('/api/external/condominio')
 
@@ -27,7 +29,7 @@ export default function Integrazioni() {
     { label: 'Fornitori', value: '/api/external/fornitore' },
   ]
 
-  async function callDanea(endpoint) {
+  async function callDanea(endpoint, params = {}) {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token
     const res = await fetch('https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/danea-proxy', {
@@ -36,7 +38,7 @@ export default function Integrazioni() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ endpoint })
+      body: JSON.stringify({ endpoint, params })
     })
     if (!res.ok) throw new Error(`Edge Function error: ${res.status}`)
     return await res.json()
@@ -74,8 +76,8 @@ export default function Integrazioni() {
   }
 
   async function sincronizzaPersone() {
-    setSyncing(true)
-    setSyncResult(null)
+    setSyncingPersone(true)
+    setSyncResultPersone(null)
     setError(null)
     try {
       const { data: edificiDb } = await supabase.from('edifici').select('id, danea_id')
@@ -83,8 +85,8 @@ export default function Integrazioni() {
       if (edificiDb) edificiDb.forEach(e => { if (e.danea_id) daneaIdMap[e.danea_id] = e.id })
 
       const [dataAttivi, dataEx] = await Promise.all([
-        callDanea('/api/external/persona?FiltroSubentri=2'),
-        callDanea('/api/external/persona?FiltroSubentri=3'),
+        callDanea('/api/external/persona', { FiltroSubentri: 2 }),
+        callDanea('/api/external/persona', { FiltroSubentri: 3 }),
       ])
 
       if (dataAttivi?.status !== 200) throw new Error(`Danea errore attivi: ${dataAttivi?.status}`)
@@ -103,18 +105,18 @@ export default function Integrazioni() {
         else console.error('Sync persone error:', error.message)
       }
 
-      setSyncResult({ tipo: 'persone', totale: tutte.length, attivi: attivi.length, ex: ex.length, inseriti })
+      setSyncResultPersone({ totale: tutte.length, attivi: attivi.length, ex: ex.length, inseriti })
       showToast(`✓ ${inseriti} persone sincronizzate da Danea`, 'success')
     } catch (e) {
       setError(e.message)
       showToast('Errore sync persone: ' + e.message, 'error')
     }
-    setSyncing(false)
+    setSyncingPersone(false)
   }
 
   async function sincronizzaCondomini() {
-    setSyncing(true)
-    setSyncResult(null)
+    setSyncingCondomini(true)
+    setSyncResultCondomini(null)
     setError(null)
     try {
       const data = await callDanea('/api/external/condominio')
@@ -140,34 +142,27 @@ export default function Integrazioni() {
       for (let i = 0; i < payload.length; i += 50) chunks.push(payload.slice(i, i + 50))
 
       for (const chunk of chunks) {
-        const { data: existing } = await supabase
-          .from('edifici')
-          .select('nome')
-          .in('nome', chunk.map(r => r.nome))
-
+        const { data: existing } = await supabase.from('edifici').select('nome').in('nome', chunk.map(r => r.nome))
         const existingNames = new Set((existing || []).map(e => e.nome))
         const toInsert = chunk.filter(r => !existingNames.has(r.nome))
         const toUpdate = chunk.filter(r => existingNames.has(r.nome))
-
         if (toInsert.length > 0) {
           const { error } = await supabase.from('edifici').insert(toInsert)
           if (!error) inseriti += toInsert.length
         }
-        if (toUpdate.length > 0) {
-          for (const row of toUpdate) {
-            await supabase.from('edifici').update(row).eq('nome', row.nome)
-            aggiornati++
-          }
+        for (const row of toUpdate) {
+          await supabase.from('edifici').update(row).eq('nome', row.nome)
+          aggiornati++
         }
       }
 
-      setSyncResult({ tipo: 'condomini', totale: condominiDanea.length, saltati, inseriti, aggiornati })
+      setSyncResultCondomini({ totale: condominiDanea.length, saltati, inseriti, aggiornati })
       showToast(`✓ Sync completato: ${inseriti} nuovi, ${aggiornati} aggiornati`, 'success')
     } catch (e) {
       setError(e.message)
       showToast('Errore sync: ' + e.message, 'error')
     }
-    setSyncing(false)
+    setSyncingCondomini(false)
   }
 
   return (
@@ -204,17 +199,17 @@ export default function Integrazioni() {
         <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
           Importa persone da Danea con stato Attivo/Ex già impostato automaticamente.
         </div>
-        <button className="btn btn-gold" onClick={sincronizzaPersone} disabled={syncing}>
-          {syncing ? '⏳ Sincronizzazione in corso...' : '👤 Sincronizza persone da Danea'}
+        <button className="btn btn-gold" onClick={sincronizzaPersone} disabled={syncingPersone}>
+          {syncingPersone ? '⏳ Sincronizzazione in corso...' : '👤 Sincronizza persone da Danea'}
         </button>
-        {syncResult?.tipo === 'persone' && (
+        {syncResultPersone && (
           <div style={{ marginTop: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '14px 16px' }}>
             <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>✅ Sincronizzazione completata</div>
             <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 2 }}>
-              <div>🟢 Attivi da Danea: <strong>{syncResult.attivi}</strong></div>
-              <div>⚫ Ex da Danea: <strong>{syncResult.ex}</strong></div>
-              <div>📥 Totale: <strong>{syncResult.totale}</strong></div>
-              <div>✨ Inseriti: <strong>{syncResult.inseriti}</strong></div>
+              <div>🟢 Attivi da Danea: <strong>{syncResultPersone.attivi}</strong></div>
+              <div>⚫ Ex da Danea: <strong>{syncResultPersone.ex}</strong></div>
+              <div>📥 Totale: <strong>{syncResultPersone.totale}</strong></div>
+              <div>✨ Inseriti: <strong>{syncResultPersone.inseriti}</strong></div>
             </div>
           </div>
         )}
@@ -226,17 +221,17 @@ export default function Integrazioni() {
         <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
           Importa o aggiorna i condomini da Danea. Le voci con "NON REGISTRARE" o "SOLO LAVORI" vengono escluse automaticamente.
         </div>
-        <button className="btn btn-gold" onClick={sincronizzaCondomini} disabled={syncing}>
-          {syncing ? '⏳ Sincronizzazione in corso...' : '🔄 Sincronizza condomini da Danea'}
+        <button className="btn btn-gold" onClick={sincronizzaCondomini} disabled={syncingCondomini}>
+          {syncingCondomini ? '⏳ Sincronizzazione in corso...' : '🔄 Sincronizza condomini da Danea'}
         </button>
-        {syncResult?.tipo === 'condomini' && (
+        {syncResultCondomini && (
           <div style={{ marginTop: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '14px 16px' }}>
             <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>✅ Sincronizzazione completata</div>
             <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 2 }}>
-              <div>📥 Totale da Danea: <strong>{syncResult.totale}</strong></div>
-              <div>⏭ Saltati (esclusi): <strong>{syncResult.saltati}</strong></div>
-              <div>✨ Nuovi inseriti: <strong>{syncResult.inseriti}</strong></div>
-              <div>🔁 Aggiornati: <strong>{syncResult.aggiornati}</strong></div>
+              <div>📥 Totale da Danea: <strong>{syncResultCondomini.totale}</strong></div>
+              <div>⏭ Saltati (esclusi): <strong>{syncResultCondomini.saltati}</strong></div>
+              <div>✨ Nuovi inseriti: <strong>{syncResultCondomini.inseriti}</strong></div>
+              <div>🔁 Aggiornati: <strong>{syncResultCondomini.aggiornati}</strong></div>
             </div>
           </div>
         )}
