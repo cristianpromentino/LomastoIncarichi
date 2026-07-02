@@ -34,7 +34,8 @@ export default function Edifici() {
   const [showImport, setShowImport] = useState(false)
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ nome: '', indirizzo: '', cap: '', citta: '', provincia: '', codice_fiscale: '' })
+  const [filtroStato, setFiltroStato] = useState('attivo')
+  const [form, setForm] = useState({ nome: '', indirizzo: '', cap: '', citta: '', provincia: '', codice_fiscale: '', stato: 'attivo' })
 
   useEffect(() => { load() }, [])
 
@@ -43,8 +44,18 @@ export default function Edifici() {
     setEdifici(data || [])
   }
 
-  function apriNuovo() { setEditing(null); setForm({ nome: '', indirizzo: '', cap: '', citta: '', provincia: '', codice_fiscale: '' }); setShowModal(true) }
-  function apriEdit(e) { setEditing(e.id); setForm({ nome: e.nome, indirizzo: e.indirizzo || '', cap: e.cap || '', citta: e.citta || '', provincia: e.provincia || '', codice_fiscale: e.codice_fiscale || '' }); setShowModal(true) }
+  function apriNuovo() {
+    setEditing(null)
+    setForm({ nome: '', indirizzo: '', cap: '', citta: '', provincia: '', codice_fiscale: '', stato: 'attivo' })
+    setShowModal(true)
+  }
+
+  function apriEdit(e) {
+    setEditing(e.id)
+    setForm({ nome: e.nome, indirizzo: e.indirizzo || '', cap: e.cap || '', citta: e.citta || '', provincia: e.provincia || '', codice_fiscale: e.codice_fiscale || '', stato: e.stato || 'attivo' })
+    setShowModal(true)
+  }
+
   function setField(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   async function salva() {
@@ -55,15 +66,23 @@ export default function Edifici() {
       : await supabase.from('edifici').insert(form)
     setSaving(false)
     if (error) { showToast('Errore: ' + error.message, 'error'); return }
-    showToast(editing ? 'Edificio aggiornato ✓' : 'Edificio aggiunto ✓', 'success')
+    showToast(editing ? 'Condominio aggiornato ✓' : 'Condominio aggiunto ✓', 'success')
     setShowModal(false); load()
+  }
+
+  async function toggleStato(e) {
+    const nuovoStato = e.stato === 'attivo' ? 'cessato' : 'attivo'
+    const { error } = await supabase.from('edifici').update({ stato: nuovoStato }).eq('id', e.id)
+    if (error) { showToast('Errore: ' + error.message, 'error'); return }
+    showToast(`Condominio segnato come ${nuovoStato} ✓`, 'success')
+    load()
   }
 
   async function elimina(id) {
     if (!confirm('Eliminare questo condominio? Gli incarichi collegati rimarranno senza condominio associato.')) return
     const { error } = await supabase.from('edifici').delete().eq('id', id)
     if (error) { showToast('Errore eliminazione', 'error'); return }
-    showToast('Edificio eliminato', 'info'); load()
+    showToast('Condominio eliminato', 'info'); load()
   }
 
   async function handleImport(rows, setCount) {
@@ -79,12 +98,16 @@ export default function Edifici() {
     load()
   }
 
+  const filtrati = filtroStato === 'tutti' ? edifici : edifici.filter(e => (e.stato || 'attivo') === filtroStato)
+  const nAttivi = edifici.filter(e => (e.stato || 'attivo') === 'attivo').length
+  const nCessati = edifici.filter(e => e.stato === 'cessato').length
+
   return (
     <div>
       <div className="topbar">
         <div>
           <div className="page-title">Condomini</div>
-          <div className="page-subtitle">{edifici.length} condomini in anagrafica</div>
+          <div className="page-subtitle">{nAttivi} attivi · {nCessati} cessati</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-outline" onClick={() => setShowImport(true)}>📥 Importa</button>
@@ -92,11 +115,24 @@ export default function Edifici() {
         </div>
       </div>
 
+      {/* FILTRO STATO */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        {['attivo', 'cessato', 'tutti'].map(s => (
+          <button
+            key={s}
+            className={`btn btn-sm ${filtroStato === s ? 'btn-gold' : 'btn-outline'}`}
+            onClick={() => setFiltroStato(s)}
+          >
+            {s === 'attivo' ? '🟢 Attivi' : s === 'cessato' ? '⚫ Cessati' : '📋 Tutti'}
+          </button>
+        ))}
+      </div>
+
       <div className="table-wrap">
-        {edifici.length === 0 ? (
+        {filtrati.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🏛</div>
-            <div className="empty-text">Nessun condominio ancora. Aggiungine uno!</div>
+            <div className="empty-text">Nessun condominio trovato</div>
           </div>
         ) : (
           <table>
@@ -104,17 +140,30 @@ export default function Edifici() {
               <tr>
                 <th>Nome</th>
                 <th>Indirizzo</th>
+                <th>Stato</th>
                 <th>Azioni</th>
               </tr>
             </thead>
             <tbody>
-              {edifici.map(e => (
-                <tr key={e.id}>
+              {filtrati.map(e => (
+                <tr key={e.id} style={{ opacity: e.stato === 'cessato' ? 0.6 : 1 }}>
                   <td style={{ fontWeight: 500 }}>{e.nome}</td>
                   <td style={{ fontSize: 13, color: 'var(--slate)' }}>{e.indirizzo || <span style={{ color: 'var(--fog)' }}>—</span>}</td>
                   <td>
+                    <span className={`badge ${e.stato === 'cessato' ? 'badge-bloccato' : 'badge-completato'}`}>
+                      {e.stato === 'cessato' ? 'Cessato' : 'Attivo'}
+                    </span>
+                  </td>
+                  <td>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-outline btn-sm" onClick={() => apriEdit(e)}>✏️</button>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        title={e.stato === 'cessato' ? 'Riattiva' : 'Segna come cessato'}
+                        onClick={() => toggleStato(e)}
+                      >
+                        {e.stato === 'cessato' ? '🟢' : '⚫'}
+                      </button>
                       {isAdmin() && <button className="btn btn-danger btn-sm" onClick={() => elimina(e.id)}>🗑</button>}
                     </div>
                   </td>
@@ -158,6 +207,13 @@ export default function Edifici() {
                   <label className="form-label">Prov</label>
                   <input className="form-input" maxLength={2} value={form.provincia} onChange={e => setField('provincia', e.target.value)} />
                 </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Stato</label>
+                <select className="form-select" value={form.stato} onChange={e => setField('stato', e.target.value)}>
+                  <option value="attivo">Attivo</option>
+                  <option value="cessato">Cessato</option>
+                </select>
               </div>
             </div>
             <div className="form-actions">
