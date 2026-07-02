@@ -69,7 +69,7 @@ export default function Condomini() {
 
   async function loadAll() {
     const [{ data: c, count }, { data: e }] = await Promise.all([
-      supabase.from('condòmini').select('*, edifici(nome)', { count: 'exact' }).order('nome_completo').limit(1000),
+      supabase.from('condòmini').select('*, edifici(nome)', { count: 'exact' }).order('nome_completo').limit(5000),
       supabase.from('edifici').select('id, nome').order('nome'),
     ])
     setCondomini(c || [])
@@ -165,11 +165,12 @@ export default function Condomini() {
     loadAll()
   }
 
-  const nAttivi = condomini.filter(c => (c.stato || 'attivo') === 'attivo').length
+  const nAttivi = condomini.filter(c => !c.stato || c.stato === 'attivo').length
   const nEx = condomini.filter(c => c.stato === 'ex').length
 
   const filtrati = condomini.filter(c => {
-    if (filtroStato !== 'tutti' && (c.stato || 'attivo') !== filtroStato) return false
+    const stato = c.stato || 'attivo'
+    if (filtroStato !== 'tutti' && stato !== filtroStato) return false
     if (filtroEdificio && c.condominio_id !== filtroEdificio) return false
     if (cerca && !c.nome_completo.toLowerCase().includes(cerca.toLowerCase())) return false
     return true
