@@ -40,7 +40,7 @@ const IMPORT_COLUMN_MAP = {
 }
 
 // Regex per rilevare email nelle Note
-const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/
+const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g
 
 const TEMPLATE_ROWS = 'Mario Rossi;;Scala A Int. 5;3331234567;3449876543;;mario.rossi@email.it;;'
 
@@ -56,14 +56,17 @@ export default function Condomini() {
   const [filtroEdificio, setFiltroEdificio] = useState('')
   const [form, setForm] = useState({ nome_completo: '', condominio_id: '', unita_immobiliare: '', telefono: '', telefono2: '', telefono3: '', email: '', email2: '', note: '' })
 
+  const [totalCount, setTotalCount] = useState(0)
+
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
-    const [{ data: c }, { data: e }] = await Promise.all([
-      supabase.from('condòmini').select('*, edifici(nome)').order('nome_completo'),
+    const [{ data: c, count }, { data: e }] = await Promise.all([
+      supabase.from('condòmini').select('*, edifici(nome)', { count: 'exact' }).order('nome_completo').limit(1000),
       supabase.from('edifici').select('id, nome').order('nome'),
     ])
     setCondomini(c || [])
+    setTotalCount(count || 0)
     setEdifici(e || [])
   }
 
@@ -121,11 +124,11 @@ export default function Condomini() {
 
       // Estrai email dalle Note se presenti
       if (row.note) {
-        const found = row.note.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) || []
+        const found = row.note.match(EMAIL_REGEX) || []
         if (found.length > 0) {
           if (!row.email) row.email = found[0]
           else if (!row.email2) row.email2 = found[0]
-          row.note = row.note.replace(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g, '').replace(/[,;]\s*$/, '').trim() || null
+          row.note = row.note.replace(EMAIL_REGEX, '').replace(/[,;]\s*$/, '').trim() || null
         }
       }
 
@@ -163,7 +166,7 @@ export default function Condomini() {
       <div className="topbar">
         <div>
           <div className="page-title">Persone</div>
-          <div className="page-subtitle">{filtrati.length} persone in anagrafica</div>
+          <div className="page-subtitle">{totalCount} persone in anagrafica{filtrati.length < totalCount ? ` · ${filtrati.length} visualizzate` : ''}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-outline" onClick={() => setShowImport(true)}>📥 Importa</button>
