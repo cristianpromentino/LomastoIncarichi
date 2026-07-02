@@ -25,8 +25,12 @@ export default function Integrazioni() {
     setError(null)
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
       const { data, error } = await supabase.functions.invoke('danea-proxy', {
-        body: { endpoint: selectedEndpoint }
+        body: { endpoint: selectedEndpoint },
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       })
 
       if (error) throw new Error(error.message)
