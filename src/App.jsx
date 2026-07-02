@@ -7,6 +7,7 @@ import IncaricoDetail from './pages/IncaricoDetail'
 import Fornitori from './pages/Fornitori'
 import Edifici from './pages/Edifici'
 import CondominPage from './pages/Condomini'
+import Integrazioni from './pages/Integrazioni'
 import Layout from './components/Layout'
 import Toast from './components/Toast'
 
@@ -72,7 +73,8 @@ export default function App() {
           {page === 'dettaglio'   && <IncaricoDetail />}
           {page === 'fornitori'   && <Fornitori />}
           {page === 'edifici'     && <Edifici />}
-          {page === 'condomini'   && <CondominPage />}
+          {page === 'condomini'      && <CondominPage />}
+          {page === 'integrazioni'   && <Integrazioni />}
         </main>
       </div>
       <Toast toasts={toasts} />

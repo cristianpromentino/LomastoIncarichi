@@ -42,6 +42,9 @@ export default function Layout({ page, navigate, profilo }) {
         <button className={`nav-item ${page === 'condomini' ? 'active' : ''}`} onClick={() => navigate('condomini')}>
           <span className="nav-icon">👤</span> Persone
         </button>
+        <button className={`nav-item ${page === 'integrazioni' ? 'active' : ''}`} onClick={() => navigate('integrazioni')}>
+          <span className="nav-icon">🔗</span> Integrazioni
+        </button>
       </nav>
 
       <div className="sidebar-footer">
