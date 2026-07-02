@@ -75,51 +75,86 @@ export default function Integrazioni() {
     }
   }
 
+  const [syncProgress, setSyncProgress] = useState(null)
+
   async function sincronizzaPersone() {
     setSyncingPersone(true)
     setSyncResultPersone(null)
+    setSyncProgress(null)
     setError(null)
     try {
-      // 1. Prendi tutti i condomini con danea_id
       const { data: edificiDb } = await supabase
-        .from('edifici')
-        .select('id, danea_id, nome')
-        .not('danea_id', 'is', null)
+        .from('edifici').select('id, danea_id').not('danea_id', 'is', null)
 
       if (!edificiDb || edificiDb.length === 0)
         throw new Error('Nessun condominio con danea_id. Sincronizza prima i condomini.')
 
       let totalePersone = 0
       let totaleInseriti = 0
+      let condominiOk = 0
+      let condominiVuoti = 0
+      let condominiErrore = 0
 
-      // 2. Per ogni condominio chiama Danea con CondGendID
-      for (const edificio of edificiDb) {
-        const data = await callDanea('/api/external/persona', { CondGendID: edificio.danea_id })
-        if (data?.status !== 200 || !Array.isArray(data.data) || data.data.length === 0) continue
+      // Batch da 5 chiamate parallele per maggiore stabilità
+      const BATCH = 5
+      for (let i = 0; i < edificiDb.length; i += BATCH) {
+        const batch = edificiDb.slice(i, i + BATCH)
+        setSyncProgress({
+          label: `${i}/${edificiDb.length} condomini processati`,
+          pct: Math.round((i / edificiDb.length) * 100)
+        })
 
-        const persone = data.data
-          .map(p => mapPersona(p, 'attivo', edificio.id))
-          .filter(p => p.nome_completo)
+        const results = await Promise.all(
+          batch.map(edificio =>
+            callDanea('/api/external/persona', { CondGendID: edificio.danea_id })
+              .then(data => ({ edificio, data, ok: true }))
+              .catch(err => ({ edificio, data: null, ok: false, err: err.message }))
+          )
+        )
 
-        totalePersone += persone.length
+        for (const { edificio, data, ok } of results) {
+          if (!ok || !data || data.status !== 200) {
+            condominiErrore++
+            continue
+          }
+          if (!Array.isArray(data.data) || data.data.length === 0) {
+            condominiVuoti++
+            continue
+          }
 
-        // Insert in batch da 50
-        const chunks = []
-        for (let i = 0; i < persone.length; i += 50) chunks.push(persone.slice(i, i + 50))
-        for (const chunk of chunks) {
-          const { error } = await supabase.from('condòmini').insert(chunk)
-          if (!error) totaleInseriti += chunk.length
-          else console.error('Sync persone error:', error.message, chunk[0]?.nome_completo)
+          condominiOk++
+          const persone = data.data
+            .map(p => mapPersona(p, 'attivo', edificio.id))
+            .filter(p => p.nome_completo)
+
+          totalePersone += persone.length
+
+          const chunks = []
+          for (let j = 0; j < persone.length; j += 50) chunks.push(persone.slice(j, j + 50))
+          for (const chunk of chunks) {
+            const { error } = await supabase.from('condòmini').insert(chunk)
+            if (!error) totaleInseriti += chunk.length
+            else console.error('Insert error:', error.message)
+          }
         }
       }
 
-      setSyncResultPersone({ condomini: edificiDb.length, totale: totalePersone, inseriti: totaleInseriti })
+      setSyncProgress(null)
+      setSyncResultPersone({
+        condomini: edificiDb.length,
+        condominiOk,
+        condominiVuoti,
+        condominiErrore,
+        totale: totalePersone,
+        inseriti: totaleInseriti
+      })
       showToast(`✓ ${totaleInseriti} persone sincronizzate da Danea`, 'success')
     } catch (e) {
       setError(e.message)
       showToast('Errore sync persone: ' + e.message, 'error')
     }
     setSyncingPersone(false)
+    setSyncProgress(null)
   }
 
   async function sincronizzaCondomini() {
@@ -210,11 +245,31 @@ export default function Integrazioni() {
         <button className="btn btn-gold" onClick={sincronizzaPersone} disabled={syncingPersone}>
           {syncingPersone ? '⏳ Sincronizzazione in corso...' : '👤 Sincronizza persone da Danea'}
         </button>
+        {syncProgress && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', marginBottom: 6 }}>
+              <span>⏳ {syncProgress.label}</span>
+              <span>{syncProgress.pct}%</span>
+            </div>
+            <div style={{ background: 'var(--line)', borderRadius: 99, height: 6, overflow: 'hidden' }}>
+              <div style={{
+                background: 'var(--gold)',
+                height: '100%',
+                borderRadius: 99,
+                width: `${syncProgress.pct}%`,
+                transition: 'width 0.3s ease'
+              }} />
+            </div>
+          </div>
+        )}
         {syncResultPersone && (
           <div style={{ marginTop: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '14px 16px' }}>
             <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>✅ Sincronizzazione completata</div>
             <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 2 }}>
               <div>🏛 Condomini processati: <strong>{syncResultPersone.condomini}</strong></div>
+              <div>✅ Con persone: <strong>{syncResultPersone.condominiOk}</strong></div>
+              <div>⬜ Vuoti: <strong>{syncResultPersone.condominiVuoti}</strong></div>
+              <div>❌ Errori: <strong>{syncResultPersone.condominiErrore}</strong></div>
               <div>👤 Persone trovate: <strong>{syncResultPersone.totale}</strong></div>
               <div>✨ Inserite: <strong>{syncResultPersone.inseriti}</strong></div>
             </div>
