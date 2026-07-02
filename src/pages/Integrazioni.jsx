@@ -80,39 +80,40 @@ export default function Integrazioni() {
     setSyncResultPersone(null)
     setError(null)
     try {
-      // 1. Prendi condomini con danea_id dal nostro DB
-      const { data: edificiDb } = await supabase.from('edifici').select('id, danea_id, nome').not('danea_id', 'is', null)
-      if (!edificiDb || edificiDb.length === 0) throw new Error('Nessun condominio con danea_id trovato. Sincronizza prima i condomini.')
+      // 1. Prendi tutti i condomini con danea_id
+      const { data: edificiDb } = await supabase
+        .from('edifici')
+        .select('id, danea_id, nome')
+        .not('danea_id', 'is', null)
 
-      let totaleAttivi = 0
-      let totaleEx = 0
+      if (!edificiDb || edificiDb.length === 0)
+        throw new Error('Nessun condominio con danea_id. Sincronizza prima i condomini.')
+
+      let totalePersone = 0
       let totaleInseriti = 0
 
-      // 2. Per ogni condominio chiama Danea
+      // 2. Per ogni condominio chiama Danea con CondGendID
       for (const edificio of edificiDb) {
-        const [dataAttivi, dataEx] = await Promise.all([
-          callDanea('/api/external/persona', { CondGendID: edificio.danea_id, FiltroSubentri: 2 }),
-          callDanea('/api/external/persona', { CondGendID: edificio.danea_id, FiltroSubentri: 3 }),
-        ])
+        const data = await callDanea('/api/external/persona', { CondGendID: edificio.danea_id })
+        if (data?.status !== 200 || !Array.isArray(data.data) || data.data.length === 0) continue
 
-        const attivi = dataAttivi?.status === 200 ? (dataAttivi.data || []).map(p => mapPersona(p, 'attivo', edificio.id)) : []
-        const ex = dataEx?.status === 200 ? (dataEx.data || []).map(p => mapPersona(p, 'ex', edificio.id)) : []
-        const tutte = [...attivi, ...ex].filter(p => p.nome_completo)
+        const persone = data.data
+          .map(p => mapPersona(p, 'attivo', edificio.id))
+          .filter(p => p.nome_completo)
 
-        totaleAttivi += attivi.length
-        totaleEx += ex.length
+        totalePersone += persone.length
 
-        // 3. Insert in batch
+        // Insert in batch da 50
         const chunks = []
-        for (let i = 0; i < tutte.length; i += 50) chunks.push(tutte.slice(i, i + 50))
+        for (let i = 0; i < persone.length; i += 50) chunks.push(persone.slice(i, i + 50))
         for (const chunk of chunks) {
           const { error } = await supabase.from('condòmini').insert(chunk)
           if (!error) totaleInseriti += chunk.length
-          else console.error('Sync persone error:', error.message)
+          else console.error('Sync persone error:', error.message, chunk[0]?.nome_completo)
         }
       }
 
-      setSyncResultPersone({ totale: totaleAttivi + totaleEx, attivi: totaleAttivi, ex: totaleEx, inseriti: totaleInseriti })
+      setSyncResultPersone({ condomini: edificiDb.length, totale: totalePersone, inseriti: totaleInseriti })
       showToast(`✓ ${totaleInseriti} persone sincronizzate da Danea`, 'success')
     } catch (e) {
       setError(e.message)
@@ -213,10 +214,9 @@ export default function Integrazioni() {
           <div style={{ marginTop: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '14px 16px' }}>
             <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>✅ Sincronizzazione completata</div>
             <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 2 }}>
-              <div>🟢 Attivi da Danea: <strong>{syncResultPersone.attivi}</strong></div>
-              <div>⚫ Ex da Danea: <strong>{syncResultPersone.ex}</strong></div>
-              <div>📥 Totale: <strong>{syncResultPersone.totale}</strong></div>
-              <div>✨ Inseriti: <strong>{syncResultPersone.inseriti}</strong></div>
+              <div>🏛 Condomini processati: <strong>{syncResultPersone.condomini}</strong></div>
+              <div>👤 Persone trovate: <strong>{syncResultPersone.totale}</strong></div>
+              <div>✨ Inserite: <strong>{syncResultPersone.inseriti}</strong></div>
             </div>
           </div>
         )}
