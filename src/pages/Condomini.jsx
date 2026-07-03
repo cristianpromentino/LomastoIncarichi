@@ -283,18 +283,25 @@ export default function Condomini() {
         )}
       </div>
 
-      {/* PAGINAZIONE */}
-      {totalePagine > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 16 }}>
-          <button className="btn btn-outline btn-sm" onClick={() => setPagina(0)} disabled={pagina === 0}>⏮</button>
-          <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 0}>← Prec</button>
-          <span style={{ fontSize: 13, color: 'var(--slate)' }}>
-            Pagina <strong>{pagina + 1}</strong> di <strong>{totalePagine}</strong> · {totalCount} persone
-          </span>
-          <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p + 1)} disabled={pagina >= totalePagine - 1}>Succ →</button>
-          <button className="btn btn-outline btn-sm" onClick={() => setPagina(totalePagine - 1)} disabled={pagina >= totalePagine - 1}>⏭</button>
+      {/* PAGINAZIONE + CONTATORE */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ fontSize: 12, color: 'var(--slate)' }}>
+          {totalCount === 0 ? 'Nessun risultato' : (
+            <>Mostrati <strong>{pagina * PER_PAGINA + 1}–{Math.min((pagina + 1) * PER_PAGINA, totalCount)}</strong> di <strong>{totalCount}</strong> persone</>
+          )}
         </div>
-      )}
+        {totalePagine > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(0)} disabled={pagina === 0}>⏮</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 0}>← Prec</button>
+            <span style={{ fontSize: 13, color: 'var(--slate)' }}>
+              Pagina <strong>{pagina + 1}</strong> di <strong>{totalePagine}</strong>
+            </span>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p + 1)} disabled={pagina >= totalePagine - 1}>Succ →</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(totalePagine - 1)} disabled={pagina >= totalePagine - 1}>⏭</button>
+          </div>
+        )}
+      </div>
 
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
