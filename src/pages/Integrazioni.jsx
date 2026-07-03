@@ -149,7 +149,7 @@ export default function Integrazioni() {
   }
 
   async function fetchTutteLePersone(edificio) {
-    const PAGE_SIZE = 500
+    const PAGE_SIZE = 100
     let pageNumber = 1
     let tutte = []
     while (true) {
