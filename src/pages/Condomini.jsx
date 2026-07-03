@@ -56,26 +56,43 @@ export default function Condomini() {
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [cerca, setCerca] = useState('')
+  const [cercaInput, setCercaInput] = useState('')
   const [filtroEdificio, setFiltroEdificio] = useState('')
   const [filtroStato, setFiltroStato] = useState('attivo')
   const [totalCount, setTotalCount] = useState(0)
+  const [pagina, setPagina] = useState(0)
+  const PER_PAGINA = 100
   const [form, setForm] = useState({
     nome_completo: '', condominio_id: '', unita_immobiliare: '', tipologia: '',
     telefono: '', telefono2: '', telefono3: '',
     email: '', email2: '', note: '', stato: 'attivo'
   })
 
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => { loadEdifici() }, [])
+  useEffect(() => { setPagina(0) }, [filtroStato, filtroEdificio, cerca])
+  useEffect(() => { loadCondomini() }, [filtroStato, filtroEdificio, cerca, pagina])
 
-  async function loadAll() {
-    const [{ data: c, count }, { data: e }] = await Promise.all([
-      supabase.from('condòmini').select('*, edifici(nome)', { count: 'exact' }).order('nome_completo').limit(5000),
-      supabase.from('edifici').select('id, nome').order('nome'),
-    ])
-    setCondomini(c || [])
-    setTotalCount(count || 0)
+  async function loadEdifici() {
+    const { data: e } = await supabase.from('edifici').select('id, nome').order('nome')
     setEdifici(e || [])
   }
+
+  async function loadCondomini() {
+    let q = supabase.from('condòmini')
+      .select('*, edifici(nome)', { count: 'exact' })
+      .order('nome_completo')
+      .range(pagina * PER_PAGINA, (pagina + 1) * PER_PAGINA - 1)
+
+    if (filtroStato !== 'tutti') q = q.eq('stato', filtroStato)
+    if (filtroEdificio) q = q.eq('condominio_id', filtroEdificio)
+    if (cerca) q = q.ilike('nome_completo', `%${cerca}%`)
+
+    const { data, count } = await q
+    setCondomini(data || [])
+    setTotalCount(count || 0)
+  }
+
+  async function loadAll() { await loadCondomini() }
 
   function apriNuovo() {
     setEditing(null)
@@ -165,23 +182,16 @@ export default function Condomini() {
     loadAll()
   }
 
-  const nAttivi = condomini.filter(c => !c.stato || c.stato === 'attivo').length
-  const nEx = condomini.filter(c => c.stato === 'ex').length
-
-  const filtrati = condomini.filter(c => {
-    const stato = c.stato || 'attivo'
-    if (filtroStato !== 'tutti' && stato !== filtroStato) return false
-    if (filtroEdificio && c.condominio_id !== filtroEdificio) return false
-    if (cerca && !c.nome_completo.toLowerCase().includes(cerca.toLowerCase())) return false
-    return true
-  })
+  const nAttivi = filtroStato === 'attivo' ? totalCount : null
+  const nEx = filtroStato === 'ex' ? totalCount : null
+  const totalePagine = Math.ceil(totalCount / PER_PAGINA)
 
   return (
     <div>
       <div className="topbar">
         <div>
           <div className="page-title">Persone</div>
-          <div className="page-subtitle">{nAttivi} attivi · {nEx} ex · {totalCount} totali</div>
+          <div className="page-subtitle">{totalCount} persone · pagina {pagina + 1}/{totalePagine || 1}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-outline" onClick={() => setShowImport(true)}>📥 Importa</button>
@@ -198,18 +208,27 @@ export default function Condomini() {
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <input className="form-input" style={{ width: 240 }} placeholder="🔍 Cerca per nome..." value={cerca} onChange={e => setCerca(e.target.value)} />
+        <input
+          className="form-input" style={{ width: 240 }}
+          placeholder="🔍 Cerca per nome..."
+          value={cercaInput}
+          onChange={e => {
+            setCercaInput(e.target.value)
+            clearTimeout(window._cercaTimer)
+            window._cercaTimer = setTimeout(() => setCerca(e.target.value), 400)
+          }}
+        />
         <select className="form-select" style={{ width: 220 }} value={filtroEdificio} onChange={e => setFiltroEdificio(e.target.value)}>
           <option value="">Tutti i condomini</option>
           {edifici.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
         </select>
         {(cerca || filtroEdificio) && (
-          <button className="btn btn-outline btn-sm" onClick={() => { setCerca(''); setFiltroEdificio('') }}>✕ Reset</button>
+          <button className="btn btn-outline btn-sm" onClick={() => { setCerca(''); setCercaInput(''); setFiltroEdificio('') }}>✕ Reset</button>
         )}
       </div>
 
       <div className="table-wrap">
-        {filtrati.length === 0 ? (
+        {condomini.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">👤</div>
             <div className="empty-text">Nessuna persona trovata</div>
@@ -228,7 +247,7 @@ export default function Condomini() {
               </tr>
             </thead>
             <tbody>
-              {filtrati.map(c => (
+              {condomini.map(c => (
                 <tr key={c.id} style={{ opacity: c.stato === 'ex' ? 0.6 : 1 }}>
                   <td style={{ fontWeight: 500 }}>{c.nome_completo}</td>
                   <td style={{ fontSize: 12 }}>{c.edifici?.nome || <span style={{ color: 'var(--fog)' }}>—</span>}</td>
@@ -263,6 +282,19 @@ export default function Condomini() {
           </table>
         )}
       </div>
+
+      {/* PAGINAZIONE */}
+      {totalePagine > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 16 }}>
+          <button className="btn btn-outline btn-sm" onClick={() => setPagina(0)} disabled={pagina === 0}>⏮</button>
+          <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 0}>← Prec</button>
+          <span style={{ fontSize: 13, color: 'var(--slate)' }}>
+            Pagina <strong>{pagina + 1}</strong> di <strong>{totalePagine}</strong> · {totalCount} persone
+          </span>
+          <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p + 1)} disabled={pagina >= totalePagine - 1}>Succ →</button>
+          <button className="btn btn-outline btn-sm" onClick={() => setPagina(totalePagine - 1)} disabled={pagina >= totalePagine - 1}>⏭</button>
+        </div>
+      )}
 
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
