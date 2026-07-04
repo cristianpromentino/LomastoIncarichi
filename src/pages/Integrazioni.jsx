@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useApp } from '../App'
 import { supabase } from '../lib/supabase'
+import Icon from '../components/Icon'
+import { NAV_ICONS } from '../components/icons-map'
 
 const SKIP_KEYWORDS = ['non registrare', 'solo lavori', 'lavori']
 
@@ -230,7 +232,9 @@ export default function Integrazioni() {
 
       {/* TEST CONNESSIONE */}
       <div className="form-card" style={{ marginBottom: 20 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>🔗 Danea Domustudio API</div>
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon icon={NAV_ICONS.integrazioni} size="sm" /> Danea Domustudio API
+        </div>
         <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
           La connessione avviene tramite Supabase Edge Function — la APIKey è conservata sul server e non è mai esposta nel browser.
         </div>
@@ -249,11 +253,13 @@ export default function Integrazioni() {
 
       {/* SYNC PERSONE */}
       <div className="form-card" style={{ marginBottom: 20 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>👤 Sincronizza Persone</div>
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon icon={NAV_ICONS.persone} size="sm" /> Sincronizza Persone
+        </div>
         <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
           Importa persone da Danea con stato Attivo/Ex già impostato automaticamente.
         </div>
-        <button className="btn btn-gold" onClick={sincronizzaPersone} disabled={syncingPersone}>
+        <button className="btn btn-primary" onClick={sincronizzaPersone} disabled={syncingPersone}>
           {syncingPersone ? '⏳ Sincronizzazione in corso...' : '👤 Sincronizza persone da Danea'}
         </button>
         {syncProgress && (
@@ -290,11 +296,13 @@ export default function Integrazioni() {
 
       {/* SYNC CONDOMINI */}
       <div className="form-card" style={{ marginBottom: 20 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>🔄 Sincronizza Condomini</div>
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon icon={NAV_ICONS.condomini} size="sm" /> Sincronizza Condomini
+        </div>
         <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
           Importa o aggiorna i condomini da Danea. Le voci con "NON REGISTRARE" o "SOLO LAVORI" vengono escluse automaticamente.
         </div>
-        <button className="btn btn-gold" onClick={sincronizzaCondomini} disabled={syncingCondomini}>
+        <button className="btn btn-primary" onClick={sincronizzaCondomini} disabled={syncingCondomini}>
           {syncingCondomini ? '⏳ Sincronizzazione in corso...' : '🔄 Sincronizza condomini da Danea'}
         </button>
         {syncResultCondomini && (
@@ -322,7 +330,7 @@ export default function Integrazioni() {
           <pre style={{
             background: 'var(--paper)', border: '1px solid var(--line)',
             borderRadius: 6, padding: '14px 16px',
-            fontSize: 11, fontFamily: 'DM Mono, monospace',
+            fontSize: 11, fontFamily: 'ui-monospace, monospace',
             overflowX: 'auto', maxHeight: 300, overflowY: 'auto',
             color: 'var(--ink2)', lineHeight: 1.6, whiteSpace: 'pre-wrap'
           }}>

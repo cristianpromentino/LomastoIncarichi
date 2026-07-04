@@ -20,8 +20,8 @@ export default function Login() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <div className="login-logo">Lomasto <span>Incarichi</span></div>
-        <div className="login-sub">Gestione Incarichi Condominiali</div>
+        <div className="login-logo">Nodo<span>Suite</span></div>
+        <div className="login-sub">Tutta la gestione condominiale. In un unico Nodo.</div>
         {error && <div className="login-error">{error}</div>}
         <div className="form-group" style={{ marginBottom: 14 }}>
           <label className="form-label">Email</label>
@@ -37,7 +37,7 @@ export default function Login() {
             value={password} onChange={e => setPassword(e.target.value)} onKeyDown={handleKey}
           />
         </div>
-        <button className="btn btn-gold" style={{ width: '100%', justifyContent: 'center' }} onClick={handleLogin} disabled={loading}>
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleLogin} disabled={loading}>
           {loading ? 'Accesso in corso...' : 'Accedi'}
         </button>
       </div>

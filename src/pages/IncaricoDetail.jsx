@@ -154,7 +154,7 @@ export default function IncaricoDetail() {
             </div>
             <div className="form-actions">
               <button className="btn btn-outline" onClick={() => setEditando(false)}>Annulla</button>
-              <button className="btn btn-gold" onClick={salvaModifiche}>Salva modifiche</button>
+              <button className="btn btn-primary" onClick={salvaModifiche}>Salva modifiche</button>
             </div>
           </>
         ) : (
@@ -181,7 +181,7 @@ export default function IncaricoDetail() {
             </div>
             <div>
               <div className="form-label" style={{ marginBottom: 4 }}>Scadenza</div>
-              <div style={{ fontSize: 13, fontFamily: 'DM Mono, monospace' }}>
+              <div style={{ fontSize: 13, fontFamily: 'ui-monospace, monospace' }}>
                 {incarico.data_scadenza ? new Date(incarico.data_scadenza).toLocaleDateString('it-IT') : <span style={{ color: 'var(--fog)' }}>—</span>}
               </div>
             </div>
@@ -204,7 +204,7 @@ export default function IncaricoDetail() {
             {incarico.data_chiusura && (
               <div>
                 <div className="form-label" style={{ marginBottom: 4 }}>Chiuso il</div>
-                <div style={{ fontSize: 13, fontFamily: 'DM Mono, monospace' }}>{new Date(incarico.data_chiusura).toLocaleDateString('it-IT')}</div>
+                <div style={{ fontSize: 13, fontFamily: 'ui-monospace, monospace' }}>{new Date(incarico.data_chiusura).toLocaleDateString('it-IT')}</div>
               </div>
             )}
           </div>
@@ -220,7 +220,7 @@ export default function IncaricoDetail() {
             placeholder="Aggiungi una nota di aggiornamento..."
             value={nuovaNota} onChange={e => setNuovaNota(e.target.value)}
           />
-          <button className="btn btn-gold" style={{ alignSelf: 'flex-end' }} onClick={salvaNota} disabled={salvandoNota || !nuovaNota.trim()}>
+          <button className="btn btn-primary" style={{ alignSelf: 'flex-end' }} onClick={salvaNota} disabled={salvandoNota || !nuovaNota.trim()}>
             {salvandoNota ? '...' : 'Aggiungi'}
           </button>
         </div>

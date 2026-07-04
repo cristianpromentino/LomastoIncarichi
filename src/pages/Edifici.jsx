@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import ImportModal from '../components/ImportModal'
+import Icon from '../components/Icon'
+import { NAV_ICONS } from '../components/icons-map'
 
 const IMPORT_FIELDS = [
   { key: 'nome', label: 'Nome', required: true },
@@ -110,28 +112,37 @@ export default function Edifici() {
           <div className="page-subtitle">{nAttivi} attivi · {nCessati} cessati</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-outline" onClick={() => setShowImport(true)}>📥 Importa</button>
-          <button className="btn btn-gold" onClick={apriNuovo}>+ Aggiungi condominio</button>
+          <button className="btn btn-outline" onClick={() => setShowImport(true)}><Icon icon={NAV_ICONS.integrazioni} size="sm" /> Importa</button>
+          <button className="btn btn-primary" onClick={apriNuovo}>+ Aggiungi condominio</button>
         </div>
       </div>
 
       {/* FILTRO STATO */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {['attivo', 'cessato', 'tutti'].map(s => (
-          <button
-            key={s}
-            className={`btn btn-sm ${filtroStato === s ? 'btn-gold' : 'btn-outline'}`}
-            onClick={() => setFiltroStato(s)}
-          >
-            {s === 'attivo' ? '🟢 Attivi' : s === 'cessato' ? '⚫ Cessati' : '📋 Tutti'}
-          </button>
-        ))}
+        <button
+          className={`btn btn-sm ${filtroStato === 'attivo' ? 'btn-primary' : 'btn-outline'}`}
+          onClick={() => setFiltroStato('attivo')}
+        >
+          🟢 Attivi
+        </button>
+        <button
+          className={`btn btn-sm ${filtroStato === 'cessato' ? 'btn-primary' : 'btn-outline'}`}
+          onClick={() => setFiltroStato('cessato')}
+        >
+          ⚫ Cessati
+        </button>
+        <button
+          className={`btn btn-sm ${filtroStato === 'tutti' ? 'btn-primary' : 'btn-outline'}`}
+          onClick={() => setFiltroStato('tutti')}
+        >
+          <Icon icon={NAV_ICONS.incarichi} size="sm" /> Tutti
+        </button>
       </div>
 
       <div className="table-wrap">
         {filtrati.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🏛</div>
+            <div className="empty-icon"><Icon icon={NAV_ICONS.condomini} size={36} /></div>
             <div className="empty-text">Nessun condominio trovato</div>
           </div>
         ) : (
@@ -218,7 +229,7 @@ export default function Edifici() {
             </div>
             <div className="form-actions">
               <button className="btn btn-outline" onClick={() => setShowModal(false)}>Annulla</button>
-              <button className="btn btn-gold" onClick={salva} disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</button>
+              <button className="btn btn-primary" onClick={salva} disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</button>
             </div>
           </div>
         </div>

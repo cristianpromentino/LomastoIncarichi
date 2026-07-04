@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import ImportModal from '../components/ImportModal'
+import Icon from '../components/Icon'
+import { NAV_ICONS } from '../components/icons-map'
 
 const CATEGORIE = ['Idraulico', 'Elettricista', 'Ascensori', 'Muratore', 'Falegname', 'Giardiniere', 'Pulizie', 'Derattizzazione', 'Restauro', 'Serraturista', 'Termoidraulico', 'Altro']
 
@@ -128,8 +130,8 @@ export default function Fornitori() {
           <div className="page-subtitle">{filtrati.length} fornitori in rubrica</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-outline" onClick={() => setShowImport(true)}>📥 Importa</button>
-          <button className="btn btn-gold" onClick={apriNuovo}>+ Aggiungi fornitore</button>
+          <button className="btn btn-outline" onClick={() => setShowImport(true)}><Icon icon={NAV_ICONS.integrazioni} size="sm" /> Importa</button>
+          <button className="btn btn-primary" onClick={apriNuovo}>+ Aggiungi fornitore</button>
         </div>
       </div>
 
@@ -140,6 +142,7 @@ export default function Fornitori() {
       <div className="table-wrap">
         {filtrati.length === 0 ? (
           <div className="empty-state">
+            {/* Nota: nessuna icona Solar "fornitori/azienda" confermata ancora — emoji lasciata invariata */}
             <div className="empty-icon">🏢</div>
             <div className="empty-text">Nessun fornitore ancora. Aggiungine uno!</div>
           </div>
@@ -159,7 +162,7 @@ export default function Fornitori() {
                 <tr key={f.id}>
                   <td style={{ fontWeight: 500 }}>{f.ragione_sociale}</td>
                   <td>{f.categoria ? <span className="badge" style={{ background: 'var(--paper)', color: 'var(--slate)', border: '1px solid var(--line)' }}>{f.categoria}</span> : <span style={{ color: 'var(--fog)' }}>—</span>}</td>
-                  <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}>
+                  <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>
                     {f.telefono_whatsapp
                       ? <a href={`https://wa.me/${f.telefono_whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: '#25d366', textDecoration: 'none' }}>📱 {f.telefono_whatsapp}</a>
                       : <span style={{ color: 'var(--fog)' }}>—</span>}
@@ -248,7 +251,7 @@ export default function Fornitori() {
             </div>
             <div className="form-actions">
               <button className="btn btn-outline" onClick={() => setShowModal(false)}>Annulla</button>
-              <button className="btn btn-gold" onClick={salva} disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</button>
+              <button className="btn btn-primary" onClick={salva} disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</button>
             </div>
           </div>
         </div>

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import ImportModal from '../components/ImportModal'
+import Icon from '../components/Icon'
+import { NAV_ICONS } from '../components/icons-map'
 
 const IMPORT_FIELDS = [
   { key: 'nome_completo', label: 'Denominazione', required: true },
@@ -194,17 +196,21 @@ export default function Condomini() {
           <div className="page-subtitle">{totalCount} persone · pagina {pagina + 1}/{totalePagine || 1}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-outline" onClick={() => setShowImport(true)}>📥 Importa</button>
-          <button className="btn btn-gold" onClick={apriNuovo}>+ Aggiungi persona</button>
+          <button className="btn btn-outline" onClick={() => setShowImport(true)}><Icon icon={NAV_ICONS.integrazioni} size="sm" /> Importa</button>
+          <button className="btn btn-primary" onClick={apriNuovo}>+ Aggiungi persona</button>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        {[['attivo', '🟢 Attivi'], ['ex', '⚫ Ex'], ['tutti', '📋 Tutti']].map(([val, label]) => (
-          <button key={val} className={`btn btn-sm ${filtroStato === val ? 'btn-gold' : 'btn-outline'}`} onClick={() => setFiltroStato(val)}>
-            {label}
-          </button>
-        ))}
+        <button className={`btn btn-sm ${filtroStato === 'attivo' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFiltroStato('attivo')}>
+          🟢 Attivi
+        </button>
+        <button className={`btn btn-sm ${filtroStato === 'ex' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFiltroStato('ex')}>
+          ⚫ Ex
+        </button>
+        <button className={`btn btn-sm ${filtroStato === 'tutti' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFiltroStato('tutti')}>
+          <Icon icon={NAV_ICONS.incarichi} size="sm" /> Tutti
+        </button>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -230,7 +236,7 @@ export default function Condomini() {
       <div className="table-wrap">
         {condomini.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">👤</div>
+            <div className="empty-icon"><Icon icon={NAV_ICONS.persone} size={36} /></div>
             <div className="empty-text">Nessuna persona trovata</div>
           </div>
         ) : (
@@ -256,7 +262,7 @@ export default function Condomini() {
                       ? <span className="badge badge-verbale">{TIPOLOGIA_LABEL[c.tipologia] || c.tipologia}</span>
                       : <span style={{ color: 'var(--fog)' }}>—</span>}
                   </td>
-                  <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}>
+                  <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>
                     {[c.telefono, c.telefono2, c.telefono3].filter(Boolean).join(', ') || <span style={{ color: 'var(--fog)' }}>—</span>}
                   </td>
                   <td style={{ fontSize: 12 }}>
@@ -369,7 +375,7 @@ export default function Condomini() {
             </div>
             <div className="form-actions">
               <button className="btn btn-outline" onClick={() => setShowModal(false)}>Annulla</button>
-              <button className="btn btn-gold" onClick={salva} disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</button>
+              <button className="btn btn-primary" onClick={salva} disabled={saving}>{saving ? 'Salvataggio...' : 'Salva'}</button>
             </div>
           </div>
         </div>

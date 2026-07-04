@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
+import Icon from '../components/Icon'
+import { NAV_ICONS } from '../components/icons-map'
 
 export default function Dashboard() {
   const { navigate } = useApp()
@@ -38,7 +40,7 @@ export default function Dashboard() {
           <div className="page-title">Dashboard</div>
           <div className="page-subtitle">Riepilogo stato incarichi</div>
         </div>
-        <button className="btn btn-gold" onClick={() => navigate('incarichi')}>
+        <button className="btn btn-primary" onClick={() => navigate('incarichi')}>
           + Nuovo incarico
         </button>
       </div>
@@ -77,7 +79,7 @@ export default function Dashboard() {
         </div>
         {recenti.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📋</div>
+            <div className="empty-icon"><Icon icon={NAV_ICONS.incarichi} size={36} /></div>
             <div className="empty-text">Nessun incarico ancora. Creane uno!</div>
           </div>
         ) : (
@@ -98,7 +100,7 @@ export default function Dashboard() {
                   <td>{i.descrizione.length > 50 ? i.descrizione.slice(0, 50) + '...' : i.descrizione}</td>
                   <td>{i.fornitori?.ragione_sociale || <span style={{ color: 'var(--fog)' }}>Da assegnare</span>}</td>
                   <td><span className={`badge badge-${i.stato}`}>{STATO_LABEL[i.stato]}</span></td>
-                  <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}>
+                  <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>
                     {i.data_scadenza ? new Date(i.data_scadenza).toLocaleDateString('it-IT') : '—'}
                   </td>
                 </tr>
