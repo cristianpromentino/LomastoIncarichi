@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
+import Icon from '../components/Icon'
+import { NAV_ICONS } from '../components/icons-map'
 
 const STATO_LABEL = { in_attesa: 'In attesa', in_corso: 'In corso', completato: 'Completato', bloccato: 'Bloccato' }
 const ORIGINE_LABEL = { verbale: 'Verbale', diretto: 'Diretto', segnalazione: 'Segnalazione' }
@@ -104,7 +106,7 @@ export default function Incarichi() {
           <div className="page-title">Incarichi</div>
           <div className="page-subtitle">{filtrati.length} incarichi{filtroStato || filtroEdificio ? ' (filtrati)' : ''}</div>
         </div>
-        <button className="btn btn-gold" onClick={() => setShowModal(true)}>+ Nuovo incarico</button>
+        <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ Nuovo incarico</button>
       </div>
 
       {/* FILTRI */}
@@ -128,7 +130,7 @@ export default function Incarichi() {
       <div className="table-wrap">
         {filtrati.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📋</div>
+            <div className="empty-icon"><Icon icon={NAV_ICONS.incarichi} size={36} /></div>
             <div className="empty-text">Nessun incarico trovato</div>
           </div>
         ) : (
@@ -151,7 +153,7 @@ export default function Incarichi() {
                   <td>{i.fornitori?.ragione_sociale || <span style={{ color: 'var(--fog)' }}>Da assegnare</span>}</td>
                   <td><span className={`badge badge-${i.origine}`}>{ORIGINE_LABEL[i.origine]}</span></td>
                   <td><span className={`badge badge-${i.stato}`}>{STATO_LABEL[i.stato]}</span></td>
-                  <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}>
+                  <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>
                     {i.data_scadenza ? new Date(i.data_scadenza).toLocaleDateString('it-IT') : '—'}
                   </td>
                 </tr>
@@ -243,7 +245,7 @@ export default function Incarichi() {
             </div>
             <div className="form-actions">
               <button className="btn btn-outline" onClick={() => setShowModal(false)}>Annulla</button>
-              <button className="btn btn-gold" onClick={salva} disabled={saving}>{saving ? 'Salvataggio...' : 'Crea incarico'}</button>
+              <button className="btn btn-primary" onClick={salva} disabled={saving}>{saving ? 'Salvataggio...' : 'Crea incarico'}</button>
             </div>
           </div>
         </div>
