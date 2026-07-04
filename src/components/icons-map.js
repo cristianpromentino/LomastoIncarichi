@@ -1,4 +1,5 @@
 // icons-map.js
+// Mappatura semantica NodoSuite -> icone Solar (stile LineDuotone).
 import {
   House,
   Buildings2,
@@ -9,6 +10,13 @@ import {
   Screencast2,
   Translation2,
   DownloadMinimalistic,
+  CloseSquare,
+  Pen,
+  PaperBin,
+  MultipleForwardLeft,
+  MultipleForwardRight,
+  MapArrowLeft,
+  MapArrowRight,
 } from '@solar-icons/react-perf/LineDuotone';
 
 export const NAV_ICONS = {
@@ -33,4 +41,14 @@ export const NAV_LABELS = {
   dashboard: 'Dashboard',
   fornitori: 'Fornitori',
   integrazioni: 'Integrazioni',
+};
+
+export const ACTION_ICONS = {
+  chiudi: CloseSquare,
+  modifica: Pen,
+  elimina: PaperBin,
+  primaPagina: MultipleForwardLeft,
+  ultimaPagina: MultipleForwardRight,
+  paginaPrec: MapArrowLeft,
+  paginaSucc: MapArrowRight,
 };
