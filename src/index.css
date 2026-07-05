@@ -300,12 +300,15 @@ tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); }
   display: none;
 }
 .bottom-nav-item {
-  flex: 1;
+  flex: 1 1 0; min-width: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; padding: 6px 2px;
+  gap: 2px; padding: 6px 2px;
   background: none; border: none; cursor: pointer;
-  color: var(--fog); font-size: 10px; font-weight: 500;
+  color: var(--fog); font-size: 9px; font-weight: 500;
   font-family: 'Inter', sans-serif;
+}
+.bottom-nav-item span {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .bottom-nav-item.active { color: var(--primary); }
 
@@ -341,6 +344,18 @@ tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); }
   .table-fornitori th:nth-child(2), .table-fornitori td:nth-child(2),
   .table-fornitori th:nth-child(3), .table-fornitori td:nth-child(3),
   .table-fornitori th:nth-child(4), .table-fornitori td:nth-child(4) { display: none; }
+
+  /* Colonna Azioni: mai schiacciata fuori vista; Nome troncato con ellissi se troppo lungo */
+  .table-persone td:last-child, .table-persone th:last-child,
+  .table-condomini td:last-child, .table-condomini th:last-child,
+  .table-fornitori td:last-child, .table-fornitori th:last-child {
+    white-space: nowrap; width: 1%;
+  }
+  .table-persone td:first-child,
+  .table-condomini td:first-child,
+  .table-fornitori td:first-child {
+    max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
 
   /* Barre filtri/ricerca: gli input a larghezza fissa inline diventano fluidi su mobile */
   .table-persone, .table-condomini, .table-fornitori { width: 100%; }
