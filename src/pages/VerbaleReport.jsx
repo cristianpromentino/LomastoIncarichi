@@ -27,7 +27,7 @@ const TABS = [
 ]
 
 export default function VerbaleReport({ verbale }) {
-  const { showToast } = useApp()
+  const { showToast, navigate } = useApp()
   const [tab, setTab] = useState('anagrafica')
   const [partecipanti, setPartecipanti] = useState([])
   const [odg, setOdg] = useState([])
@@ -113,8 +113,41 @@ export default function VerbaleReport({ verbale }) {
     load()
   }
 
-  function creaIncaricoDaAdemp() {
-    showToast('Funzione "Crea Incarico" disponibile nella prossima fase', 'info')
+  function parseScadenzaToISO(str) {
+    if (!str) return null
+    const p = String(str).trim().split('/')
+    if (p.length === 3) {
+      const [gg, mm, aaaa] = p
+      if (/^\d{1,2}$/.test(gg) && /^\d{1,2}$/.test(mm) && /^\d{4}$/.test(aaaa)) {
+        return `${aaaa}-${mm.padStart(2, '0')}-${gg.padStart(2, '0')}`
+      }
+    }
+    return null // stringa descrittiva (es. "entro fine mese"), non convertibile in data
+  }
+
+  async function creaIncaricoDaAdemp(ademp) {
+    if (ademp.incarico_id) {
+      navigate('dettaglio', ademp.incarico_id)
+      return
+    }
+    const { data: { user } } = await supabase.auth.getUser()
+    const payload = {
+      edificio_id: verbale.edificio_id || null,
+      fornitore_id: null,
+      descrizione: ademp.attivita,
+      origine: 'verbale',
+      stato: 'in_attesa',
+      data_scadenza: parseScadenzaToISO(ademp.scadenza),
+      assegnato_da: user?.id || null,
+    }
+    const { data: inserted, error } = await supabase.from('incarichi').insert(payload).select().single()
+    if (error) { showToast('Errore creazione incarico: ' + error.message, 'error'); return }
+
+    const { error: updErr } = await supabase.from('verbale_adempimenti').update({ incarico_id: inserted.id }).eq('id', ademp.id)
+    if (updErr) showToast('Incarico creato ma collegamento non salvato: ' + updErr.message, 'error')
+
+    setAdempimenti(list => list.map(x => x.id === ademp.id ? { ...x, incarico_id: inserted.id } : x))
+    showToast('Incarico creato ✓', 'success')
   }
 
   return (
@@ -286,7 +319,13 @@ export default function VerbaleReport({ verbale }) {
                           </select>
                         </td>
                         <td style={{ whiteSpace: 'nowrap' }}>
-                          <button className="btn btn-outline btn-sm" onClick={() => creaIncaricoDaAdemp(ad)}>→ Incarico</button>
+                          {ad.incarico_id ? (
+                            <button className="btn btn-outline btn-sm" onClick={() => navigate('dettaglio', ad.incarico_id)}>
+                              <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" /> Incarico creato
+                            </button>
+                          ) : (
+                            <button className="btn btn-outline btn-sm" onClick={() => creaIncaricoDaAdemp(ad)}>→ Incarico</button>
+                          )}
                           {ad.manuale && (
                             <button className="btn btn-danger btn-sm" style={{ marginLeft: 6 }} onClick={() => eliminaAdemp(ad.id)}>
                               <Icon icon={ACTION_ICONS.elimina} size="sm" />
