@@ -23,8 +23,20 @@ export default function IncaricoDetail() {
   useEffect(() => { if (selectedId) loadAll() }, [selectedId])
 
   useEffect(() => {
-    document.body.style.overflow = (showWa) ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
+    if (showWa) {
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      return () => {
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        window.scrollTo(0, scrollY)
+      }
+    }
   }, [showWa])
 
   async function loadAll() {

@@ -73,8 +73,20 @@ export default function Condomini() {
   useEffect(() => { loadEdifici() }, [])
 
   useEffect(() => {
-    document.body.style.overflow = (showModal || showImport) ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
+    if (showModal || showImport) {
+      const scrollY = window.scrollY
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      return () => {
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        window.scrollTo(0, scrollY)
+      }
+    }
   }, [showModal, showImport])
   useEffect(() => { setPagina(0) }, [filtroStato, filtroEdificio, cerca])
   useEffect(() => { loadCondomini() }, [filtroStato, filtroEdificio, cerca, pagina])
