@@ -357,6 +357,13 @@ tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); }
     max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
 
+  .table-persone td, .table-condomini td, .table-fornitori td,
+  .table-persone th, .table-condomini th, .table-fornitori th {
+    padding: 10px 8px;
+  }
+  .table-persone .badge, .table-condomini .badge { padding: 2px 6px; font-size: 10px; }
+  .toggle-stato-btn { display: none; }
+
   /* Barre filtri/ricerca: gli input a larghezza fissa inline diventano fluidi su mobile */
   .table-persone, .table-condomini, .table-fornitori { width: 100%; }
 
