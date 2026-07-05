@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import { supabase } from './lib/supabase'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -10,6 +10,7 @@ import CondominPage from './pages/Condomini'
 import Integrazioni from './pages/Integrazioni'
 import Layout from './components/Layout'
 import Toast from './components/Toast'
+import OverdueAlertModal from './components/OverdueAlertModal'
 
 export const AppContext = createContext(null)
 
@@ -23,6 +24,11 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null)
   const [toasts, setToasts] = useState([])
 
+  // Alert incarichi scaduti — controllato una sola volta per sessione di login
+  const [overdueCount, setOverdueCount] = useState(0)
+  const [showOverdueAlert, setShowOverdueAlert] = useState(false)
+  const overdueCheckedRef = useRef(false)
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -32,7 +38,12 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) loadProfilo(session.user.id)
-      else { setProfilo(null); setLoading(false) }
+      else {
+        setProfilo(null)
+        setLoading(false)
+        overdueCheckedRef.current = false
+        setShowOverdueAlert(false)
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -41,6 +52,27 @@ export default function App() {
     const { data } = await supabase.from('profili').select('*').eq('id', userId).single()
     setProfilo(data)
     setLoading(false)
+  }
+
+  // Al primo profilo caricato in questa sessione, controlla gli incarichi scaduti
+  useEffect(() => {
+    if (profilo && !overdueCheckedRef.current) {
+      overdueCheckedRef.current = true
+      checkOverdue()
+    }
+  }, [profilo])
+
+  async function checkOverdue() {
+    const oggi = new Date().toISOString().slice(0, 10)
+    const { count } = await supabase
+      .from('incarichi')
+      .select('id', { count: 'exact', head: true })
+      .lt('data_scadenza', oggi)
+      .neq('stato', 'completato')
+    if (count && count > 0) {
+      setOverdueCount(count)
+      setShowOverdueAlert(true)
+    }
   }
 
   function navigate(p, id = null) { setPage(p); setSelectedId(id) }
@@ -78,6 +110,13 @@ export default function App() {
         </main>
       </div>
       <Toast toasts={toasts} />
+      {showOverdueAlert && (
+        <OverdueAlertModal
+          count={overdueCount}
+          onClose={() => setShowOverdueAlert(false)}
+          onGoTo={() => { navigate('incarichi'); setShowOverdueAlert(false) }}
+        />
+      )}
     </AppContext.Provider>
   )
 }

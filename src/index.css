@@ -138,6 +138,7 @@ body {
 .stat-card-value { font-size: 28px; font-weight: 700; color: var(--ink); }
 .stat-card-label { font-size: 11px; color: var(--fog); margin-top: 2px; text-transform: uppercase; letter-spacing: .05em; }
 .stat-card.urgente .stat-card-value { color: var(--danger); }
+.stat-card.scaduto .stat-card-value { color: var(--danger); }
 .stat-card.in-scadenza .stat-card-value { color: var(--warning); }
 .stat-card.completati .stat-card-value { color: var(--success); }
 
@@ -259,6 +260,29 @@ tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); }
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--fog); padding: 4px; }
 .modal-close:hover { color: var(--ink); }
+
+/* MODAL ALERT INCARICHI SCADUTI — post login */
+.overdue-modal-overlay {
+  position: fixed; inset: 0; z-index: 110;
+  background: rgba(1,85,120,.45); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.overdue-modal {
+  position: relative;
+  width: 85vw; max-width: 480px;
+  height: 33vh; min-height: 220px; max-height: 360px;
+  background: var(--white); border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 24px; gap: 10px;
+}
+.overdue-modal-close {
+  position: absolute; top: 12px; right: 12px;
+}
+.overdue-modal-emoji { font-size: 32px; }
+.overdue-modal-count { font-size: 40px; font-weight: 700; color: var(--danger); line-height: 1; }
+.overdue-modal-text { font-size: 14px; color: var(--slate); margin-bottom: 8px; }
+.overdue-modal-actions { display: flex; gap: 10px; }
 
 /* LOG */
 .log-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
