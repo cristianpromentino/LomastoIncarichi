@@ -183,7 +183,7 @@ export default function Incarichi() {
       {/* MODAL NUOVO INCARICO */}
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="modal" style={{ width: 'min(580px, 94vw)', boxSizing: 'border-box', overflow: 'hidden' }}>
+          <div className="modal" style={{ width: 'min(580px, 94vw)', boxSizing: 'border-box' }}>
             <div className="modal-header">
               <div className="modal-title">Nuovo incarico</div>
               <button className="modal-close" onClick={() => setShowModal(false)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
