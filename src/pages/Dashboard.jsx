@@ -40,7 +40,7 @@ export default function Dashboard() {
           <div className="page-title">Dashboard</div>
           <div className="page-subtitle">Riepilogo stato incarichi</div>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('incarichi')}>
+        <button className="btn btn-primary" onClick={() => { sessionStorage.setItem('nodosuite:openNewIncarico', '1'); navigate('incarichi') }}>
           + Nuovo incarico
         </button>
       </div>
@@ -83,7 +83,7 @@ export default function Dashboard() {
             <div className="empty-text">Nessun incarico ancora. Creane uno!</div>
           </div>
         ) : (
-          <table>
+          <table className="table-incarichi-dash">
             <thead>
               <tr>
                 <th>Condominio</th>

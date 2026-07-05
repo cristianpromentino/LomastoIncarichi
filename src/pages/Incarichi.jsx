@@ -23,7 +23,13 @@ export default function Incarichi() {
     segnalatore_id: '', segnalatore_telefono: '', segnalatore_email: ''
   })
 
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => {
+    loadAll()
+    if (sessionStorage.getItem('nodosuite:openNewIncarico') === '1') {
+      sessionStorage.removeItem('nodosuite:openNewIncarico')
+      setShowModal(true)
+    }
+  }, [])
 
   useEffect(() => {
     if (showModal) {
@@ -151,7 +157,7 @@ export default function Incarichi() {
             <div className="empty-text">Nessun incarico trovato</div>
           </div>
         ) : (
-          <table>
+          <table className="table-incarichi">
             <thead>
               <tr>
                 <th>Condominio</th>
