@@ -168,11 +168,194 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
     showToast('Incarico creato ✓', 'success')
   }
 
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return ''
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+
+  function exportXLSX() {
+    if (!window.XLSX) { showToast('Libreria XLSX non disponibile', 'error'); return }
+    const XLSX = window.XLSX
+    const wb = XLSX.utils.book_new()
+    const adm = verbale.amministratore || {}
+
+    function sheetFromRows(rows, colWidths) {
+      const ws = XLSX.utils.aoa_to_sheet(rows)
+      if (colWidths) ws['!cols'] = colWidths.map(w => ({ wch: w }))
+      return ws
+    }
+
+    // Foglio 1 — Anagrafica
+    XLSX.utils.book_append_sheet(wb, sheetFromRows([
+      ['Campo', 'Valore'],
+      ['Denominazione', a.denominazione || ''],
+      ['Indirizzo', a.indirizzo || ''],
+      ['Luogo assemblea', a.luogo_assemblea || ''],
+      ['Data assemblea', a.data_assemblea || ''],
+      ['Ora inizio', a.ora_inizio || ''],
+      ['Ora chiusura', a.ora_chiusura || ''],
+      ['Tipo convocazione', a.tipo_convocazione || ''],
+      ['Rif. normativo', a.rif_normativo || ''],
+      ['Totale convocati', a.totale_convocati || ''],
+      ['Presenti/Delegati', a.totale_presenti_delegati || ''],
+      ['Millesimi rappresentati', a.millesimi_rappresentati || ''],
+      ['Millesimi totali', a.millesimi_totali || 1000],
+      ['Quorum raggiunto', a.quorum_raggiunto ? 'Sì' : 'No'],
+    ], [26, 40]), 'Anagrafica')
+
+    // Foglio 2 — Organi
+    XLSX.utils.book_append_sheet(wb, sheetFromRows([
+      ['Campo', 'Valore'],
+      ['Presidente', o.presidente || ''],
+      ['Segretario', o.segretario || ''],
+      ['Firma Presidente', o.firma_presidente || ''],
+      ['Firma Segretario', o.firma_segretario || ''],
+    ], [22, 30]), 'Organi')
+
+    // Foglio 3 — Amministratore
+    XLSX.utils.book_append_sheet(wb, sheetFromRows([
+      ['Campo', 'Valore'],
+      ['Soggetto', adm.nominativo || ''],
+      ['Compenso', adm.compenso || ''],
+      ['Esito', adm.esito || ''],
+    ], [16, 40]), 'Amministratore')
+
+    // Foglio 4 — Partecipanti
+    const wsPart = XLSX.utils.json_to_sheet(
+      partecipanti.map(p => ({ N: p.n, Nominativo: p.nominativo, Modalità: p.modalita, Delegato: p.delegato, Millesimi: p.millesimi, Note: p.note }))
+    )
+    wsPart['!cols'] = [{ wch: 5 }, { wch: 30 }, { wch: 12 }, { wch: 25 }, { wch: 10 }, { wch: 30 }]
+    XLSX.utils.book_append_sheet(wb, wsPart, 'Partecipanti')
+
+    // Foglio 5 — Ordine del Giorno
+    const wsOdg = XLSX.utils.json_to_sheet(
+      odg.map(x => ({ N: x.n, Titolo: x.titolo, Tipo: x.tipo, Delibera: x.delibera, Esito: x.esito, Importo: x.importo, 'Rif normativo': x.rif_normativo, Note: x.note }))
+    )
+    wsOdg['!cols'] = [{ wch: 5 }, { wch: 30 }, { wch: 18 }, { wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 18 }, { wch: 30 }]
+    XLSX.utils.book_append_sheet(wb, wsOdg, 'OdG')
+
+    // Foglio 6 — Relazioni (testo esteso, colonna larga)
+    const wsRel = XLSX.utils.json_to_sheet(
+      odg.map(x => ({ N: x.n, Titolo: x.titolo, Relazione: x.relazione || '' }))
+    )
+    wsRel['!cols'] = [{ wch: 5 }, { wch: 30 }, { wch: 100 }]
+    XLSX.utils.book_append_sheet(wb, wsRel, 'Relazioni')
+
+    // Foglio 7 — Adempimenti
+    const wsAdemp = XLSX.utils.json_to_sheet(
+      adempimenti.map(x => ({ N: x.n, Attività: x.attivita, Area: x.area, Urgenza: x.urgenza, Responsabile: x.responsabile, Scadenza: x.scadenza, Stato: x.stato }))
+    )
+    wsAdemp['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 16 }, { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 12 }]
+    XLSX.utils.book_append_sheet(wb, wsAdemp, 'Adempimenti')
+
+    const filename = (verbale.titolo || 'verbale').replace(/[^a-zA-Z0-9]/g, '_') + '.xlsx'
+    XLSX.writeFile(wb, filename)
+    showToast('Excel esportato ✓ (7 fogli, uno per sezione)', 'success')
+  }
+
+  function exportPDF() {
+    const adm = verbale.amministratore || {}
+    const win = window.open('', '_blank')
+    if (!win) { showToast('Il browser ha bloccato la finestra di stampa — controlla i popup bloccati', 'error'); return }
+
+    const esitoColor = { approvato: '#065f46', respinto: '#991b1b', rinviato: '#92400e', parziale: '#92400e' }
+    const esitoBg = { approvato: '#d1fae5', respinto: '#fee2e2', rinviato: '#fef3c7', parziale: '#fef3c7' }
+    const statoColor = { 'da-fare': '#374151', 'in-corso': '#1e40af', completato: '#065f46', annullato: '#991b1b' }
+    const statoBg = { 'da-fare': '#f3f4f6', 'in-corso': '#dbeafe', completato: '#d1fae5', annullato: '#fee2e2' }
+
+    const html = `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>${escapeHtml(verbale.titolo || a.denominazione || 'Verbale')}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 landscape; margin: 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', Arial, sans-serif; color: #111827; font-size: 11px; margin: 0; }
+  h1 { font-size: 20px; margin: 0 0 4px; color: #013d57; font-weight: 700; }
+  h2 {
+    font-size: 13px; margin: 20px 0 8px; color: #015578; font-weight: 600;
+    border-bottom: 2px solid #e8f2f7; padding-bottom: 5px; letter-spacing: .02em;
+  }
+  .sub { color: #6b7280; font-size: 11px; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #f3f4f6; font-size: 10px; vertical-align: top; }
+  th { background: #e8f2f7; color: #013d57; font-weight: 600; text-transform: uppercase; font-size: 9px; letter-spacing: .03em; }
+  .odg-block {
+    margin-bottom: 12px; page-break-inside: avoid;
+    border: 1px solid #f3f4f6; border-radius: 8px; padding: 10px 14px;
+  }
+  .odg-block h3 { font-size: 12px; margin: 0 0 6px; color: #111827; display: flex; align-items: center; gap: 8px; }
+  .odg-num { font-family: ui-monospace, monospace; color: #015578; font-weight: 700; }
+  .rel-text { font-size: 10px; line-height: 1.6; white-space: pre-wrap; color: #374151; margin-top: 6px; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 9px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <h1>${escapeHtml(verbale.titolo || a.denominazione || 'Verbale')}</h1>
+  <div class="sub">${escapeHtml(a.data_assemblea || '')}${a.indirizzo ? ' · ' + escapeHtml(a.indirizzo) : ''}</div>
+
+  <h2>Anagrafica</h2>
+  <table>
+    <tr><td><strong>Denominazione</strong></td><td>${escapeHtml(a.denominazione)}</td><td><strong>Luogo assemblea</strong></td><td>${escapeHtml(a.luogo_assemblea)}</td></tr>
+    <tr><td><strong>Data assemblea</strong></td><td>${escapeHtml(a.data_assemblea)}</td><td><strong>Orario</strong></td><td>${escapeHtml(a.ora_inizio)} - ${escapeHtml(a.ora_chiusura)}</td></tr>
+    <tr><td><strong>Tipo convocazione</strong></td><td>${escapeHtml(a.tipo_convocazione)}</td><td><strong>Rif. normativo</strong></td><td>${escapeHtml(a.rif_normativo)}</td></tr>
+    <tr><td><strong>Convocati</strong></td><td>${a.totale_convocati || '—'}</td><td><strong>Presenti/Delegati</strong></td><td>${a.totale_presenti_delegati || '—'}</td></tr>
+    <tr><td><strong>Millesimi rappresentati</strong></td><td>${a.millesimi_rappresentati || '—'} / ${a.millesimi_totali || 1000}</td><td><strong>Quorum</strong></td><td>${a.quorum_raggiunto ? '<span class="badge" style="background:#d1fae5;color:#065f46;">Raggiunto</span>' : '<span class="badge" style="background:#fee2e2;color:#991b1b;">Non raggiunto</span>'}</td></tr>
+  </table>
+
+  <h2>Organi</h2>
+  <table>
+    <tr><td><strong>Presidente</strong></td><td>${escapeHtml(o.presidente)}</td><td><strong>Segretario</strong></td><td>${escapeHtml(o.segretario)}</td></tr>
+  </table>
+
+  <h2>Amministratore</h2>
+  <table>
+    <tr><td><strong>Soggetto</strong></td><td>${escapeHtml(adm.nominativo)}</td><td><strong>Compenso</strong></td><td>${escapeHtml(adm.compenso)}</td><td><strong>Esito</strong></td><td>${escapeHtml(adm.esito)}</td></tr>
+  </table>
+
+  <h2>Partecipanti (${partecipanti.length})</h2>
+  <table>
+    <thead><tr><th>#</th><th>Nominativo</th><th>Modalità</th><th>Delegato</th><th>Millesimi</th><th>Note</th></tr></thead>
+    <tbody>
+      ${partecipanti.map(p => `<tr><td>${p.n || ''}</td><td>${escapeHtml(p.nominativo)}</td><td>${p.modalita === 'PRESENTE' ? '<span class="badge" style="background:#d1fae5;color:#065f46;">Presente</span>' : '<span class="badge" style="background:#e8f2f7;color:#013d57;">Delega</span>'}</td><td>${escapeHtml(p.delegato) || '—'}</td><td>${p.millesimi || 0}</td><td>${escapeHtml(p.note) || ''}</td></tr>`).join('')}
+    </tbody>
+  </table>
+
+  <h2>Ordine del Giorno</h2>
+  ${odg.map(item => `
+    <div class="odg-block">
+      <h3><span class="odg-num">${item.n}.</span> ${escapeHtml(item.titolo)} <span class="badge" style="background:${esitoBg[item.esito_badge] || '#f3f4f6'};color:${esitoColor[item.esito_badge] || '#374151'};">${escapeHtml(item.esito_badge)}</span></h3>
+      <div style="font-size:10px;color:#374151;"><strong>Delibera:</strong> ${escapeHtml(item.delibera) || '—'} &nbsp; <strong>Esito:</strong> ${escapeHtml(item.esito) || '—'} &nbsp; <strong>Importo:</strong> ${escapeHtml(item.importo) || '—'}</div>
+      ${item.relazione ? `<div class="rel-text">${escapeHtml(item.relazione)}</div>` : ''}
+    </div>
+  `).join('')}
+
+  <h2>Adempimenti</h2>
+  <table>
+    <thead><tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Responsabile</th><th>Scadenza</th><th>Stato</th></tr></thead>
+    <tbody>
+      ${adempimenti.map(ad => `<tr><td>${ad.n || ''}</td><td>${escapeHtml(ad.attivita)}</td><td>${escapeHtml(ad.area)}</td><td>${escapeHtml(ad.urgenza)}</td><td>${escapeHtml(ad.responsabile) || '—'}</td><td>${escapeHtml(ad.scadenza) || '—'}</td><td><span class="badge" style="background:${statoBg[ad.stato] || '#f3f4f6'};color:${statoColor[ad.stato] || '#374151'};">${escapeHtml(STATO_LABEL[ad.stato] || ad.stato)}</span></td></tr>`).join('')}
+    </tbody>
+  </table>
+</body>
+</html>`
+
+    win.document.write(html)
+    win.document.close()
+    setTimeout(() => { win.focus(); win.print() }, 350)
+  }
+
   return (
     <div>
       <div className="page-title">{verbale.titolo || a.denominazione || 'Verbale'}</div>
       <div className="page-subtitle">{(a.data_assemblea || '')}{a.indirizzo ? ' · ' + a.indirizzo : ''}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 4, flexWrap: 'wrap' }}>
         <label className="form-label" style={{ marginBottom: 0 }}>Condominio collegato</label>
         <select
           className="form-select" style={{ width: 260, height: 30 }}
@@ -181,6 +364,10 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
           <option value="">— Nessuno, assegna —</option>
           {edificiList.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
         </select>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <button className="btn btn-outline btn-sm" onClick={exportXLSX}>Esporta Excel</button>
+          <button className="btn btn-outline btn-sm" onClick={exportPDF}>Esporta PDF (stampa)</button>
+        </div>
       </div>
 
       <div className="verbale-tabs">
