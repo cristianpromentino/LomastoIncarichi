@@ -41,6 +41,11 @@ export default function Edifici() {
 
   useEffect(() => { load() }, [])
 
+  useEffect(() => {
+    document.body.style.overflow = (showModal || showImport) ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [showModal, showImport])
+
   async function load() {
     const { data } = await supabase.from('edifici').select('*').order('nome')
     setEdifici(data || [])

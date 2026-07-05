@@ -62,6 +62,11 @@ export default function Fornitori() {
 
   useEffect(() => { load() }, [])
 
+  useEffect(() => {
+    document.body.style.overflow = (showModal || showImport) ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [showModal, showImport])
+
   async function load() {
     const { data } = await supabase.from('fornitori').select('*').order('ragione_sociale')
     setFornitori(data || [])

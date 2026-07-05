@@ -71,6 +71,11 @@ export default function Condomini() {
   })
 
   useEffect(() => { loadEdifici() }, [])
+
+  useEffect(() => {
+    document.body.style.overflow = (showModal || showImport) ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [showModal, showImport])
   useEffect(() => { setPagina(0) }, [filtroStato, filtroEdificio, cerca])
   useEffect(() => { loadCondomini() }, [filtroStato, filtroEdificio, cerca, pagina])
 

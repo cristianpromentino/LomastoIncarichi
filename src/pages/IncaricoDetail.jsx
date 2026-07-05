@@ -22,6 +22,11 @@ export default function IncaricoDetail() {
 
   useEffect(() => { if (selectedId) loadAll() }, [selectedId])
 
+  useEffect(() => {
+    document.body.style.overflow = (showWa) ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [showWa])
+
   async function loadAll() {
     const [{ data: inc }, { data: lg }, { data: ed }, { data: fo }] = await Promise.all([
       supabase.from('incarichi').select('*, edifici(id,nome), fornitori(id,ragione_sociale,telefono_whatsapp), profili(nome_completo), condòmini(id,nome_completo,telefono,email)').eq('id', selectedId).single(),

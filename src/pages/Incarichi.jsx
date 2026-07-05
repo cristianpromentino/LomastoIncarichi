@@ -25,6 +25,11 @@ export default function Incarichi() {
 
   useEffect(() => { loadAll() }, [])
 
+  useEffect(() => {
+    document.body.style.overflow = (showModal) ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [showModal])
+
   async function loadAll() {
     const [{ data: inc }, { data: ed }, { data: fo }] = await Promise.all([
       supabase.from('incarichi').select('*, edifici(nome), fornitori(ragione_sociale)').order('created_at', { ascending: false }),
