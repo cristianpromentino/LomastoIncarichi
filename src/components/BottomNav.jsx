@@ -27,7 +27,7 @@ export default function BottomNav({ page, navigate }) {
             className={`bottom-nav-item ${isActive ? 'active' : ''}`}
             onClick={() => navigate(tab.route)}
           >
-            <Icon icon={tab.icon} size={22} />
+            <Icon icon={tab.icon} size={20} />
             <span>{tab.label}</span>
           </button>
         )
