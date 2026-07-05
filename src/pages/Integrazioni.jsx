@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../App'
 import { supabase } from '../lib/supabase'
 import Icon from '../components/Icon'
-import { NAV_ICONS } from '../components/icons-map'
+import { NAV_ICONS, UTILITY_ICONS } from '../components/icons-map'
 
 const SKIP_KEYWORDS = ['non registrare', 'solo lavori', 'lavori']
 
@@ -247,7 +247,7 @@ export default function Integrazioni() {
           </select>
         </div>
         <button className="btn btn-outline" onClick={testConnessione} disabled={loading}>
-          {loading ? '⏳ Chiamata in corso...' : '🔍 Testa connessione Danea'}
+          {loading ? <><Icon icon={UTILITY_ICONS.caricamento} size="sm" /> Chiamata in corso...</> : '🔍 Testa connessione Danea'}
         </button>
       </div>
 
@@ -260,12 +260,12 @@ export default function Integrazioni() {
           Importa persone da Danea con stato Attivo/Ex già impostato automaticamente.
         </div>
         <button className="btn btn-primary" onClick={sincronizzaPersone} disabled={syncingPersone}>
-          {syncingPersone ? '⏳ Sincronizzazione in corso...' : '👤 Sincronizza persone da Danea'}
+          {syncingPersone ? <><Icon icon={UTILITY_ICONS.caricamento} size="sm" /> Sincronizzazione in corso...</> : '👤 Sincronizza persone da Danea'}
         </button>
         {syncProgress && (
           <div style={{ marginTop: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', marginBottom: 6 }}>
-              <span>⏳ {syncProgress.label}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon icon={UTILITY_ICONS.caricamento} size="sm" /> {syncProgress.label}</span>
               <span>{syncProgress.pct}%</span>
             </div>
             <div style={{ background: 'var(--line)', borderRadius: 99, height: 6, overflow: 'hidden' }}>
@@ -303,7 +303,7 @@ export default function Integrazioni() {
           Importa o aggiorna i condomini da Danea. Le voci con "NON REGISTRARE" o "SOLO LAVORI" vengono escluse automaticamente.
         </div>
         <button className="btn btn-primary" onClick={sincronizzaCondomini} disabled={syncingCondomini}>
-          {syncingCondomini ? '⏳ Sincronizzazione in corso...' : '🔄 Sincronizza condomini da Danea'}
+          {syncingCondomini ? <><Icon icon={UTILITY_ICONS.caricamento} size="sm" /> Sincronizzazione in corso...</> : '🔄 Sincronizza condomini da Danea'}
         </button>
         {syncResultCondomini && (
           <div style={{ marginTop: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '14px 16px' }}>
