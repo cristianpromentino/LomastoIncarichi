@@ -6,6 +6,14 @@ import { ACTION_ICONS, UTILITY_ICONS } from '../components/icons-map'
 
 const EDGE_FUNCTION_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/analizza-verbale'
 
+function normalizeStr(s) {
+  return String(s || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // rimuove accenti
+    .replace(/[^\w\s]/g, ' ') // punteggiatura -> spazio
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export default function ImportVerbaleModal({ onClose, onImported }) {
   const { showToast } = useApp()
   const [tab, setTab] = useState('pdf') // 'pdf' | 'json'
@@ -79,10 +87,15 @@ export default function ImportVerbaleModal({ onClose, onImported }) {
     }
 
     let edificio_id = null
-    const denom = (v.anagrafica?.denominazione || '').trim().toLowerCase()
-    if (denom) {
+    const testo = normalizeStr((v.anagrafica?.denominazione || '') + ' ' + (v.anagrafica?.indirizzo || ''))
+    if (testo) {
       const { data: edifici } = await supabase.from('edifici').select('id, nome')
-      const match = (edifici || []).find(e => (e.nome || '').trim().toLowerCase() === denom)
+      // Il nome interno del condominio (es. "ACATE 24 D") è quasi sempre
+      // una porzione riconoscibile dell'indirizzo/denominazione completa estratta da Claude
+      const match = (edifici || []).find(e => {
+        const nomeNorm = normalizeStr(e.nome)
+        return nomeNorm.length >= 4 && testo.includes(nomeNorm)
+      })
       if (match) edificio_id = match.id
     }
 

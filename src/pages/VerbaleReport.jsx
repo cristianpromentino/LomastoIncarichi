@@ -161,10 +161,10 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
     const { data: inserted, error } = await supabase.from('incarichi').insert(payload).select().single()
     if (error) { showToast('Errore creazione incarico: ' + error.message, 'error'); return }
 
-    const { error: updErr } = await supabase.from('verbale_adempimenti').update({ incarico_id: inserted.id }).eq('id', ademp.id)
+    const { error: updErr } = await supabase.from('verbale_adempimenti').update({ incarico_id: inserted.id, stato: 'in-corso' }).eq('id', ademp.id)
     if (updErr) showToast('Incarico creato ma collegamento non salvato: ' + updErr.message, 'error')
 
-    setAdempimenti(list => list.map(x => x.id === ademp.id ? { ...x, incarico_id: inserted.id } : x))
+    setAdempimenti(list => list.map(x => x.id === ademp.id ? { ...x, incarico_id: inserted.id, stato: 'in-corso' } : x))
     showToast('Incarico creato ✓', 'success')
   }
 
