@@ -10,13 +10,21 @@ const RUOLO_LABEL = {
   back_office: 'Back Office'
 }
 
-export default function Layout({ page, navigate, profilo }) {
+export default function Layout({ page, navigate, profilo, collapsed, onToggleSidebar }) {
   async function logout() {
     await supabase.auth.signOut()
   }
   return (
     <>
-      <div className="sidebar">
+      <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+        <button
+          className="sidebar-toggle"
+          onClick={onToggleSidebar}
+          title={collapsed ? 'Espandi menu' : 'Comprimi menu'}
+        >
+          {collapsed ? '›' : '‹'}
+        </button>
+
         <div className="sidebar-brand">
           <div className="sidebar-logo">Nodo<span>Suite</span></div>
           <div className="sidebar-tag">Tutta la gestione condominiale. In un unico Nodo.</div>
@@ -29,27 +37,27 @@ export default function Layout({ page, navigate, profilo }) {
         )}
         <nav className="sidebar-nav">
           <button className={`nav-item ${page === 'dashboard' ? 'active' : ''}`} onClick={() => navigate('dashboard')}>
-            <Icon icon={NAV_ICONS.dashboard} size="md" /> Dashboard
+            <Icon icon={NAV_ICONS.dashboard} size="md" /> <span>Dashboard</span>
           </button>
           <button className={`nav-item ${page === 'incarichi' || page === 'dettaglio' ? 'active' : ''}`} onClick={() => navigate('incarichi')}>
-            <Icon icon={NAV_ICONS.incarichi} size="md" /> Incarichi
+            <Icon icon={NAV_ICONS.incarichi} size="md" /> <span>Incarichi</span>
           </button>
           <button className={`nav-item ${page === 'fornitori' ? 'active' : ''}`} onClick={() => navigate('fornitori')}>
-            <Icon icon={NAV_ICONS.fornitori} size="md" /> Fornitori
+            <Icon icon={NAV_ICONS.fornitori} size="md" /> <span>Fornitori</span>
           </button>
           <button className={`nav-item ${page === 'edifici' ? 'active' : ''}`} onClick={() => navigate('edifici')}>
-            <Icon icon={NAV_ICONS.condomini} size="md" /> Condomini
+            <Icon icon={NAV_ICONS.condomini} size="md" /> <span>Condomini</span>
           </button>
           <button className={`nav-item ${page === 'condomini' ? 'active' : ''}`} onClick={() => navigate('condomini')}>
-            <Icon icon={NAV_ICONS.persone} size="md" /> Persone
+            <Icon icon={NAV_ICONS.persone} size="md" /> <span>Persone</span>
           </button>
           <button className={`nav-item ${page === 'integrazioni' ? 'active' : ''}`} onClick={() => navigate('integrazioni')}>
-            <Icon icon={NAV_ICONS.integrazioni} size="md" /> Integrazioni
+            <Icon icon={NAV_ICONS.integrazioni} size="md" /> <span>Integrazioni</span>
           </button>
         </nav>
         <div className="sidebar-footer">
           <button className="btn-logout" onClick={logout}>
-            <span>⬅</span> Esci
+            <span>⬅</span><span>Esci</span>
           </button>
         </div>
       </div>
