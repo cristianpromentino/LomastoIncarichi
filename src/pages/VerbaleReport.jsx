@@ -396,16 +396,16 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
       <button className="btn btn-outline btn-sm verbali-back-mobile" onClick={onBack}>← Elenco verbali</button>
       <div className="page-title">{verbale.titolo || a.denominazione || 'Verbale'}</div>
       <div className="page-subtitle">{(a.data_assemblea || '')}{a.indirizzo ? ' · ' + a.indirizzo : ''}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+      <div className="verbale-header-row">
         <label className="form-label" style={{ marginBottom: 0 }}>Condominio collegato</label>
         <select
-          className="form-select" style={{ width: 260, height: 30 }}
+          className="form-select"
           value={verbale.edificio_id || ''} onChange={cambiaEdificio} disabled={savingEdificio}
         >
           <option value="">— Nessuno, assegna —</option>
           {edificiList.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
         </select>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+        <div className="verbale-export-buttons">
           <button className="btn btn-outline btn-sm" onClick={exportXLSX}>Esporta Excel</button>
           <button className="btn btn-outline btn-sm" onClick={exportPDF}>Esporta PDF (stampa)</button>
         </div>
