@@ -537,9 +537,13 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
                         {ESITO_LABEL[item.esito_badge] || item.esito_badge}
                       </span>
                     </div>
+                    <div style={{ fontSize: 13, marginBottom: 10 }}>
+                      <div className="form-label">Tipo delibera</div><div>{item.tipo || '—'}</div>
+                    </div>
+                    <div style={{ fontSize: 13, marginBottom: 10 }}>
+                      <div className="form-label">Delibera</div><div>{item.delibera || '—'}</div>
+                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: 13 }}>
-                      <div><div className="form-label">Tipo delibera</div><div>{item.tipo || '—'}</div></div>
-                      <div><div className="form-label">Delibera</div><div>{item.delibera || '—'}</div></div>
                       <div><div className="form-label">Esito votazione</div><div>{item.esito || '—'}</div></div>
                       <div><div className="form-label">Importo</div><div>{item.importo || '—'}</div></div>
                       <div><div className="form-label">Rif. normativo</div><div>{item.rif_normativo || '—'}</div></div>
@@ -570,24 +574,41 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
           {tab === 'adempimenti' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowAddAdemp(true)}>+ Aggiungi adempimento</button>
+                <button className="btn btn-primary" onClick={() => setShowAddAdemp(true)}>+ Aggiungi adempimento</button>
               </div>
               {adempimenti.length === 0 ? (
                 <div className="empty-state"><div className="empty-text">Nessun adempimento</div></div>
               ) : (
                 <table className="adempimenti-table">
                   <thead>
-                    <tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Stato</th><th>Scadenza</th></tr>
+                    <tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Stato</th><th>Scadenza</th><th>Incarico</th></tr>
                   </thead>
                   <tbody>
                     {adempimenti.map(ad => (
                       <tr key={ad.id} onClick={() => apriAdempimento(ad)} style={{ cursor: 'pointer' }}>
                         <td data-label="#" style={{ fontFamily: 'ui-monospace, monospace' }}>{String(ad.n || '').padStart(2, '0')}</td>
-                        <td data-label="Attività" style={{ maxWidth: 280 }}>{ad.attivita}{ad.incarico_id && <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" style={{ marginLeft: 6, verticalAlign: 'middle' }} />}</td>
+                        <td data-label="Attività" style={{ maxWidth: 280 }}>{ad.attivita}</td>
                         <td data-label="Area"><span className="badge" style={{ background: 'var(--paper)', color: 'var(--slate)', border: '1px solid var(--line)' }}>{ad.area}</span></td>
                         <td data-label="Urgenza"><span className="badge" style={URGENZA_COLORS[ad.urgenza] || {}}>{URGENZA_LABEL[ad.urgenza] || ad.urgenza}</span></td>
                         <td data-label="Stato"><span className="badge" style={STATO_COLORS[ad.stato] || {}}>{STATO_LABEL[ad.stato] || ad.stato}</span></td>
                         <td data-label="Scadenza" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{ad.scadenza || '—'}</td>
+                        <td data-label="Incarico">
+                          {ad.incarico_id ? (
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={e => { e.stopPropagation(); navigate('dettaglio', ad.incarico_id) }}
+                            >
+                              <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" /> Creato
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={e => { e.stopPropagation(); creaIncaricoDaAdemp(ad) }}
+                            >
+                              → Incarico
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
