@@ -24,6 +24,7 @@ import {
   Phone,
   DangerSquare,
   CheckCircle,
+  SmartphoneVibration,
 } from '@solar-icons/react-perf/LineDuotone';
 
 import {
@@ -77,4 +78,5 @@ export const UTILITY_ICONS = {
   telefono: Phone,
   pericolo: DangerSquare,
   approvato: CheckCircle,
+  whatsappNumero: SmartphoneVibration,
 };
