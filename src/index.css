@@ -306,7 +306,7 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   display: flex; gap: 20px;
   height: calc(100vh - 56px);
   margin: -28px -32px; padding: 28px 32px;
-  width: 100%; box-sizing: border-box; overflow-x: hidden;
+  box-sizing: border-box; overflow-x: hidden;
 }
 .verbali-sidebar {
   width: 300px; flex-shrink: 0;
@@ -341,7 +341,7 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 .verbali-item-del:hover { color: var(--danger); background: rgba(220,38,38,.08); }
 
 .verbali-content {
-  flex: 1; width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;
+  flex: 1; min-width: 0; box-sizing: border-box; overflow-x: hidden;
   background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card);
   padding: 28px; box-shadow: var(--shadow); overflow-y: auto;
 }
@@ -389,6 +389,55 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 .verbali-back-mobile { display: none; }
 @media (max-width: 768px) {
   .verbali-back-mobile { display: inline-flex; margin-bottom: 10px; }
+}
+
+/* Selettore sezione a comparsa — sostituisce le tab orizzontali su mobile */
+.verbale-section-picker-btn {
+  display: none;
+  width: 100%; align-items: center; justify-content: space-between;
+  padding: 10px 14px; margin: 16px 0 4px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--r);
+  font-size: 13px; font-weight: 600; color: var(--primary-dark);
+  font-family: 'Inter', sans-serif; cursor: pointer;
+}
+
+/* Tabelle chiave-valore (Anagrafica, Organi): impilate su mobile invece che affiancate */
+@media (max-width: 768px) {
+  .kv-table, .kv-table tbody, .kv-table tr, .kv-table td { display: block; width: 100% !important; }
+  .kv-table tr { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .kv-table tr:last-child { border-bottom: none; }
+  .kv-table td { padding: 2px 0; border: none; }
+  .kv-table td:first-child { font-size: 10px; text-transform: uppercase; letter-spacing: .03em; padding-bottom: 3px; }
+  .kv-table td:last-child { font-size: 14px; }
+}
+
+/* Tabelle dati (Partecipanti, Adempimenti): diventano card impilate su mobile */
+@media (max-width: 768px) {
+  .partecipanti-table thead, .adempimenti-table thead { display: none; }
+  .partecipanti-table, .partecipanti-table tbody, .partecipanti-table tr, .partecipanti-table td,
+  .adempimenti-table, .adempimenti-table tbody, .adempimenti-table tr, .adempimenti-table td {
+    display: block; width: 100% !important;
+  }
+  .partecipanti-table tr, .adempimenti-table tr {
+    border: 1px solid var(--line); border-radius: var(--r); margin-bottom: 10px; padding: 10px 12px;
+  }
+  .partecipanti-table td, .adempimenti-table td { border: none; padding: 4px 0; }
+  .partecipanti-table td[data-label]::before, .adempimenti-table td[data-label]::before {
+    content: attr(data-label);
+    display: block; font-size: 10px; font-weight: 600; color: var(--slate);
+    text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px;
+  }
+  /* Il numero progressivo (#) resta discreto, non serve enfasi da card */
+  .partecipanti-table td[data-label="#"], .adempimenti-table td[data-label="#"] {
+    position: absolute; opacity: .5; font-size: 10px;
+  }
+  .partecipanti-table td[data-label="#"]::before, .adempimenti-table td[data-label="#"]::before { display: none; }
+  .partecipanti-table tr, .adempimenti-table tr { position: relative; padding-top: 22px; }
+}
+
+@media (max-width: 768px) {
+  .verbale-tabs { display: none; }
+  .verbale-section-picker-btn { display: flex; }
 }
 
 /* CSS dinamico: le tabelle dei report si adattano fluidamente alla larghezza */
