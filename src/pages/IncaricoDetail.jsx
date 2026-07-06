@@ -66,7 +66,11 @@ export default function IncaricoDetail() {
     const scadenza = inc.data_scadenza ? new Date(inc.data_scadenza).toLocaleDateString('it-IT') : 'non definita'
     const fornitore = inc.fornitori?.ragione_sociale || 'Fornitore'
     const condominio = inc.edifici?.nome || '—'
-    const text = `Gentile ${fornitore},\n\nLa contattiamo per l'incarico relativo al condominio ${condominio}.\n\nAttività da eseguire: ${inc.descrizione}\nScadenza: ${scadenza}\n\nRestiamo in attesa di un suo gentile riscontro.\nGrazie!\n\nStudio Lomasto Amministrazioni`
+    const segnalatoreNome = inc.condòmini?.nome_completo
+    const segnalatoreLine = segnalatoreNome
+      ? `Segnalatore (riferimento): ${segnalatoreNome}${inc.segnalatore_telefono ? ' - ' + inc.segnalatore_telefono : ''}\n`
+      : ''
+    const text = `Gentile ${fornitore},\n\nLa contattiamo per l'incarico relativo al condominio ${condominio}.\n\nAttività da eseguire: ${inc.descrizione}\nScadenza: ${scadenza}\n${segnalatoreLine}\nRestiamo in attesa di un suo gentile riscontro.\nGrazie!\n\nStudio Lomasto Amministrazioni`
     setWaText(text)
   }
 

@@ -8,6 +8,19 @@ const STATO_LABEL = { 'da-fare': 'Da fare', 'in-corso': 'In corso', 'completato'
 const URGENZA_LABEL = { urgente: 'Urgente', alta: 'Alta', media: 'Media', bassa: 'Bassa' }
 const ESITO_LABEL = { approvato: 'Approvato', respinto: 'Non approvato', rinviato: 'Rinviato', parziale: 'Parziale' }
 
+const URGENZA_COLORS = {
+  urgente: { background: '#fee2e2', color: '#991b1b' },
+  alta: { background: '#fef3c7', color: '#92400e' },
+  media: { background: '#dbeafe', color: '#1e40af' },
+  bassa: { background: '#f3f4f6', color: '#374151' },
+}
+const STATO_COLORS = {
+  'da-fare': { background: '#f3f4f6', color: '#374151' },
+  'in-corso': { background: '#dbeafe', color: '#1e40af' },
+  completato: { background: '#d1fae5', color: '#065f46' },
+  annullato: { background: '#fee2e2', color: '#991b1b' },
+}
+
 function calcDur(s, e) {
   try {
     const p = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
@@ -34,6 +47,8 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
   const [adempimenti, setAdempimenti] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddAdemp, setShowAddAdemp] = useState(false)
+  const [selectedAdemp, setSelectedAdemp] = useState(null)
+  const [adempForm, setAdempForm] = useState(null)
   const [pdfUrl, setPdfUrl] = useState(null)
   const [edificiList, setEdificiList] = useState([])
   const [savingEdificio, setSavingEdificio] = useState(false)
@@ -62,7 +77,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
 
   // Blocco scroll sfondo quando il modale "aggiungi adempimento" è aperto
   useEffect(() => {
-    if (showAddAdemp) {
+    if (showAddAdemp || selectedAdemp) {
       const scrollY = window.scrollY
       document.body.style.position = 'fixed'
       document.body.style.top = `-${scrollY}px`
@@ -76,7 +91,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
         window.scrollTo(0, scrollY)
       }
     }
-  }, [showAddAdemp])
+  }, [showAddAdemp, selectedAdemp])
 
   async function load() {
     setLoading(true)
@@ -104,6 +119,27 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
     setAdempimenti(list => list.map(x => x.id === id ? { ...x, [field]: value } : x))
     const { error } = await supabase.from('verbale_adempimenti').update({ [field]: value }).eq('id', id)
     if (error) showToast('Errore salvataggio: ' + error.message, 'error')
+  }
+
+  function apriAdempimento(ad) {
+    setSelectedAdemp(ad)
+    setAdempForm({
+      attivita: ad.attivita || '', area: ad.area || 'Amministrazione', urgenza: ad.urgenza || 'media',
+      responsabile: ad.responsabile || '', scadenza: ad.scadenza || '', stato: ad.stato || 'da-fare',
+    })
+  }
+
+  async function salvaAdempimento() {
+    const { error } = await supabase.from('verbale_adempimenti').update({
+      attivita: adempForm.attivita, area: adempForm.area, urgenza: adempForm.urgenza,
+      responsabile: adempForm.responsabile || null, scadenza: adempForm.scadenza || null,
+      stato: adempForm.stato,
+    }).eq('id', selectedAdemp.id)
+    if (error) { showToast('Errore salvataggio: ' + error.message, 'error'); return }
+    setAdempimenti(list => list.map(x => x.id === selectedAdemp.id ? { ...x, ...adempForm } : x))
+    showToast('Adempimento aggiornato ✓', 'success')
+    setSelectedAdemp(null)
+    setAdempForm(null)
   }
 
   async function eliminaAdemp(id) {
@@ -165,6 +201,10 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
     if (updErr) showToast('Incarico creato ma collegamento non salvato: ' + updErr.message, 'error')
 
     setAdempimenti(list => list.map(x => x.id === ademp.id ? { ...x, incarico_id: inserted.id, stato: 'in-corso' } : x))
+    if (selectedAdemp?.id === ademp.id) {
+      setSelectedAdemp(s => ({ ...s, incarico_id: inserted.id }))
+      setAdempForm(f => ({ ...f, stato: 'in-corso' }))
+    }
     showToast('Incarico creato ✓', 'success')
   }
 
@@ -513,40 +553,17 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
               ) : (
                 <table>
                   <thead>
-                    <tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Responsabile</th><th>Scadenza</th><th>Stato</th><th>Azioni</th></tr>
+                    <tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Stato</th><th>Scadenza</th></tr>
                   </thead>
                   <tbody>
                     {adempimenti.map(ad => (
-                      <tr key={ad.id}>
+                      <tr key={ad.id} onClick={() => apriAdempimento(ad)} style={{ cursor: 'pointer' }}>
                         <td style={{ fontFamily: 'ui-monospace, monospace' }}>{String(ad.n || '').padStart(2, '0')}</td>
-                        <td style={{ maxWidth: 240 }}>{ad.attivita}</td>
+                        <td style={{ maxWidth: 280 }}>{ad.attivita}{ad.incarico_id && <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" style={{ marginLeft: 6, verticalAlign: 'middle' }} />}</td>
                         <td><span className="badge" style={{ background: 'var(--paper)', color: 'var(--slate)', border: '1px solid var(--line)' }}>{ad.area}</span></td>
-                        <td>
-                          <select className="form-select" style={{ height: 28, fontSize: 11 }} value={ad.urgenza} onChange={e => updateAdempCampo(ad.id, 'urgenza', e.target.value)}>
-                            {Object.entries(URGENZA_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-                          </select>
-                        </td>
-                        <td style={{ fontSize: 12 }}>{ad.responsabile || '—'}</td>
+                        <td><span className="badge" style={URGENZA_COLORS[ad.urgenza] || {}}>{URGENZA_LABEL[ad.urgenza] || ad.urgenza}</span></td>
+                        <td><span className="badge" style={STATO_COLORS[ad.stato] || {}}>{STATO_LABEL[ad.stato] || ad.stato}</span></td>
                         <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{ad.scadenza || '—'}</td>
-                        <td>
-                          <select className="form-select" style={{ height: 28, fontSize: 11 }} value={ad.stato} onChange={e => updateAdempCampo(ad.id, 'stato', e.target.value)}>
-                            {Object.entries(STATO_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-                          </select>
-                        </td>
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          {ad.incarico_id ? (
-                            <button className="btn btn-outline btn-sm" onClick={() => navigate('dettaglio', ad.incarico_id)}>
-                              <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" /> Incarico creato
-                            </button>
-                          ) : (
-                            <button className="btn btn-outline btn-sm" onClick={() => creaIncaricoDaAdemp(ad)}>→ Incarico</button>
-                          )}
-                          {ad.manuale && (
-                            <button className="btn btn-danger btn-sm" style={{ marginLeft: 6 }} onClick={() => eliminaAdemp(ad.id)}>
-                              <Icon icon={ACTION_ICONS.elimina} size="sm" />
-                            </button>
-                          )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -599,6 +616,75 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
             <div className="form-actions">
               <button className="btn btn-outline" onClick={() => setShowAddAdemp(false)}>Annulla</button>
               <button className="btn btn-primary" onClick={aggiungiAdemp}>+ Aggiungi adempimento</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedAdemp && adempForm && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSelectedAdemp(null)}>
+          <div className="modal">
+            <div className="modal-header">
+              <div className="modal-title">Adempimento #{String(selectedAdemp.n || '').padStart(2, '0')}</div>
+              <button className="modal-close" onClick={() => setSelectedAdemp(null)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
+            </div>
+            <div className="form-group" style={{ marginBottom: 14 }}>
+              <label className="form-label">Attività</label>
+              <textarea className="form-textarea" value={adempForm.attivita} onChange={e => setAdempForm(f => ({ ...f, attivita: e.target.value }))} />
+            </div>
+            <div className="form-grid" style={{ marginBottom: 14 }}>
+              <div className="form-group">
+                <label className="form-label">Area</label>
+                <select className="form-select" value={adempForm.area} onChange={e => setAdempForm(f => ({ ...f, area: e.target.value }))}>
+                  <option value="Amministrazione">Amministrazione</option>
+                  <option value="Contabilità">Contabilità</option>
+                  <option value="Comunicazione">Comunicazione</option>
+                  <option value="Legale">Legale</option>
+                  <option value="Manutenzione">Manutenzione</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Urgenza</label>
+                <select className="form-select" value={adempForm.urgenza} onChange={e => setAdempForm(f => ({ ...f, urgenza: e.target.value }))}>
+                  {Object.entries(URGENZA_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="form-grid" style={{ marginBottom: 14 }}>
+              <div className="form-group">
+                <label className="form-label">Responsabile</label>
+                <input className="form-input" value={adempForm.responsabile} onChange={e => setAdempForm(f => ({ ...f, responsabile: e.target.value }))} placeholder="es. Amministratore" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Scadenza</label>
+                <input className="form-input" value={adempForm.scadenza} onChange={e => setAdempForm(f => ({ ...f, scadenza: e.target.value }))} placeholder="es. 31/03/2026" />
+              </div>
+            </div>
+            <div className="form-group" style={{ marginBottom: 18 }}>
+              <label className="form-label">Stato</label>
+              <select className="form-select" value={adempForm.stato} onChange={e => setAdempForm(f => ({ ...f, stato: e.target.value }))}>
+                {Object.entries(STATO_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 16, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+              {selectedAdemp.incarico_id ? (
+                <button className="btn btn-outline btn-sm" onClick={() => navigate('dettaglio', selectedAdemp.incarico_id)}>
+                  <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" /> Incarico creato — apri
+                </button>
+              ) : (
+                <button className="btn btn-outline btn-sm" onClick={() => creaIncaricoDaAdemp(selectedAdemp)}>→ Crea incarico</button>
+              )}
+            </div>
+
+            <div className="form-actions" style={{ justifyContent: 'space-between' }}>
+              {selectedAdemp.manuale ? (
+                <button className="btn btn-danger" onClick={() => { eliminaAdemp(selectedAdemp.id); setSelectedAdemp(null) }}>Elimina</button>
+              ) : <span />}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-outline" onClick={() => setSelectedAdemp(null)}>Chiudi</button>
+                <button className="btn btn-primary" onClick={salvaAdempimento}>Salva modifiche</button>
+              </div>
             </div>
           </div>
         </div>

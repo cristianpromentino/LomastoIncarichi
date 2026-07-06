@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import ImportModal from '../components/ImportModal'
 import Icon from '../components/Icon'
-import { NAV_ICONS, ACTION_ICONS } from '../components/icons-map'
+import { NAV_ICONS, ACTION_ICONS, UTILITY_ICONS } from '../components/icons-map'
 
 const CATEGORIE = ['Idraulico', 'Elettricista', 'Ascensori', 'Muratore', 'Falegname', 'Giardiniere', 'Pulizie', 'Derattizzazione', 'Restauro', 'Serraturista', 'Termoidraulico', 'Altro']
 
@@ -180,7 +180,9 @@ export default function Fornitori() {
                   <td>{f.categoria ? <span className="badge" style={{ background: 'var(--paper)', color: 'var(--slate)', border: '1px solid var(--line)' }}>{f.categoria}</span> : <span style={{ color: 'var(--fog)' }}>—</span>}</td>
                   <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>
                     {f.telefono_whatsapp
-                      ? <a href={`https://wa.me/${f.telefono_whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: '#25d366', textDecoration: 'none' }}>📱 {f.telefono_whatsapp}</a>
+                      ? <a href={`https://wa.me/${f.telefono_whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: '#25d366', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <Icon icon={UTILITY_ICONS.whatsappNumero} size="sm" /> {f.telefono_whatsapp}
+                        </a>
                       : <span style={{ color: 'var(--fog)' }}>—</span>}
                   </td>
                   <td style={{ fontSize: 12 }}>{f.email || <span style={{ color: 'var(--fog)' }}>—</span>}</td>
