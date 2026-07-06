@@ -73,7 +73,7 @@ export default function Verbali() {
   })
 
   return (
-    <div className="verbali-shell">
+    <div className={`verbali-shell ${current ? 'has-selection' : ''}`}>
       <div className="verbali-sidebar">
         <div className="verbali-sidebar-header">
           <div className="verbali-sidebar-title">Verbali</div>
@@ -139,6 +139,7 @@ export default function Verbali() {
         ) : (
           <VerbaleReport
             verbale={current}
+            onBack={() => setCurrent(null)}
             onEdificioChanged={(edificio_id, nome) => {
               setCurrent(c => ({ ...c, edificio_id, edifici: nome ? { nome } : null }))
               load()

@@ -39,7 +39,7 @@ const TABS = [
   { key: 'adempimenti', label: 'Adempimenti' },
 ]
 
-export default function VerbaleReport({ verbale, onEdificioChanged }) {
+export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
   const { showToast, navigate } = useApp()
   const [tab, setTab] = useState('anagrafica')
   const [partecipanti, setPartecipanti] = useState([])
@@ -393,6 +393,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged }) {
 
   return (
     <div>
+      <button className="btn btn-outline btn-sm verbali-back-mobile" onClick={onBack}>← Elenco verbali</button>
       <div className="page-title">{verbale.titolo || a.denominazione || 'Verbale'}</div>
       <div className="page-subtitle">{(a.data_assemblea || '')}{a.indirizzo ? ' · ' + a.indirizzo : ''}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 4, flexWrap: 'wrap' }}>
