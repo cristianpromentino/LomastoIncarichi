@@ -11,16 +11,16 @@ import { NAV_ICONS, NAV_LABELS, UTILITY_ICONS } from './icons-map'
 // (nomi storici: "edifici" = pagina Condomini, "condomini" = pagina Persone)
 const MAIN_TABS = [
   { route: 'dashboard', label: NAV_LABELS.dashboard, icon: NAV_ICONS.dashboard },
+  { route: 'inbox', label: NAV_LABELS.inbox, icon: NAV_ICONS.inbox },
   { route: 'incarichi', label: NAV_LABELS.incarichi, icon: NAV_ICONS.incarichi, matchAlso: ['dettaglio'] },
-  { route: 'verbali', label: NAV_LABELS.verbali, icon: NAV_ICONS.verbali },
 ]
 
 const MORE_ITEMS = [
+  { route: 'verbali', label: NAV_LABELS.verbali, icon: NAV_ICONS.verbali },
   { route: 'edifici', label: NAV_LABELS.condomini, icon: NAV_ICONS.condomini },
   { route: 'fornitori', label: NAV_LABELS.fornitori, icon: NAV_ICONS.fornitori },
   { route: 'condomini', label: NAV_LABELS.persone, icon: NAV_ICONS.persone },
   { route: 'integrazioni', label: NAV_LABELS.integrazioni, icon: NAV_ICONS.integrazioni },
-  { route: 'inbox', label: NAV_LABELS.inbox, icon: NAV_ICONS.inbox },
 ]
 
 export default function BottomNav({ page, navigate }) {
