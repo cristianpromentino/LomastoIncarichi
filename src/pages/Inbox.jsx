@@ -145,9 +145,9 @@ export default function Inbox() {
         <div className="inbox-sidebar-header">
           <div>
             <span className="badge badge-completato">Connesso</span>
-            <div style={{ fontSize: 11, color: 'var(--fog)', marginTop: 4 }}>{connection.email_address}</div>
+            <div style={{ fontSize: 11, color: 'var(--fog)', marginTop: 4, wordBreak: 'break-all' }}>{connection.email_address}</div>
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div className="inbox-sidebar-header-actions">
             <button className="btn btn-outline btn-sm" onClick={sincronizzaOra} disabled={syncing}>
               {syncing ? <Icon icon={UTILITY_ICONS.caricamento} size="sm" /> : 'Aggiorna'}
             </button>
