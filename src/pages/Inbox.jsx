@@ -20,6 +20,7 @@ const FOLDERS = [
   { key: 'ricevute', label: 'Ricevute' },
   { key: 'inviata', label: 'Inviata' },
   { key: 'bozze', label: 'Bozze' },
+  { key: 'cestino', label: 'Cestino' },
 ]
 
 export default function Inbox() {
@@ -162,7 +163,12 @@ export default function Inbox() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore')
-      showToast(action === 'archive' ? 'Email archiviata ✓' : 'Email spostata nel Cestino ✓', 'success')
+      const messaggi = {
+        archive: 'Email archiviata ✓',
+        trash: 'Email spostata nel Cestino ✓',
+        restore: 'Email ripristinata ✓',
+      }
+      showToast(messaggi[action], 'success')
       if (current?.id === messageId) setCurrent(null)
       await load()
     } catch (e) {
@@ -234,6 +240,7 @@ export default function Inbox() {
     let base
     if (folder === 'ricevute') base = messages.filter(m => (m.labels || []).includes('INBOX'))
     else if (folder === 'inviata') base = messages.filter(m => (m.labels || []).includes('SENT'))
+    else if (folder === 'cestino') base = messages.filter(m => (m.labels || []).includes('TRASH'))
     else return drafts
 
     const q = search.trim().toLowerCase()
@@ -245,6 +252,14 @@ export default function Inbox() {
       (m.snippet || '').toLowerCase().includes(q)
     )
   }, [messages, drafts, folder, search])
+
+  const conteggi = useMemo(() => ({
+    ricevute: messages.filter(m => (m.labels || []).includes('INBOX')).length,
+    ricevuteNonLette: messages.filter(m => (m.labels || []).includes('INBOX') && !m.is_read).length,
+    inviata: messages.filter(m => (m.labels || []).includes('SENT')).length,
+    bozze: drafts.length,
+    cestino: messages.filter(m => (m.labels || []).includes('TRASH')).length,
+  }), [messages, drafts])
 
   if (loading) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--fog)' }}>Caricamento...</div>
@@ -290,16 +305,20 @@ export default function Inbox() {
         </div>
 
         <div className="inbox-folders">
-          {FOLDERS.map(f => (
-            <button
-              key={f.key}
-              className={`inbox-folder-btn ${folder === f.key ? 'active' : ''}`}
-              onClick={() => { setFolder(f.key); setSearch('') }}
-            >
-              {f.label}
-              {f.key === 'bozze' && drafts.length > 0 && <span className="inbox-folder-count">{drafts.length}</span>}
-            </button>
-          ))}
+          {FOLDERS.map(f => {
+            const n = conteggi[f.key]
+            const badge = f.key === 'ricevute' && conteggi.ricevuteNonLette > 0 ? conteggi.ricevuteNonLette : n
+            return (
+              <button
+                key={f.key}
+                className={`inbox-folder-btn ${folder === f.key ? 'active' : ''}`}
+                onClick={() => { setFolder(f.key); setSearch('') }}
+              >
+                {f.label}
+                {badge > 0 && <span className="inbox-folder-count">{badge}</span>}
+              </button>
+            )
+          })}
         </div>
 
         {folder !== 'bozze' && (
@@ -357,7 +376,11 @@ export default function Inbox() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
               <div className="page-title" style={{ fontSize: 18 }}>{current.subject}</div>
-              {folder !== 'inviata' && (
+              {folder === 'cestino' ? (
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <button className="btn btn-outline btn-sm" onClick={() => archiviaOElimina(current.id, 'restore')}>Ripristina</button>
+                </div>
+              ) : folder !== 'inviata' && (
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   <button className="btn btn-outline btn-sm" onClick={() => archiviaOElimina(current.id, 'archive')}>Archivia</button>
                   <button className="btn btn-danger btn-sm" onClick={() => archiviaOElimina(current.id, 'trash')}>Elimina</button>
@@ -396,7 +419,7 @@ export default function Inbox() {
               ))}
             </div>
 
-            {folder !== 'inviata' && (
+            {folder !== 'inviata' && folder !== 'cestino' && (
               <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
                 {current.is_replied && (
                   <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 6 }}>
