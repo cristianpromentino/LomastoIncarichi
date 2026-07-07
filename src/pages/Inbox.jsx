@@ -147,9 +147,12 @@ export default function Inbox() {
             <span className="badge badge-completato">Connesso</span>
             <div style={{ fontSize: 11, color: 'var(--fog)', marginTop: 4 }}>{connection.email_address}</div>
           </div>
-          <button className="btn btn-outline btn-sm" onClick={sincronizzaOra} disabled={syncing}>
-            {syncing ? <Icon icon={UTILITY_ICONS.caricamento} size="sm" /> : 'Aggiorna'}
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="btn btn-outline btn-sm" onClick={sincronizzaOra} disabled={syncing}>
+              {syncing ? <Icon icon={UTILITY_ICONS.caricamento} size="sm" /> : 'Aggiorna'}
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={scollega}>Scollega</button>
+          </div>
         </div>
 
         <div className="inbox-list">
