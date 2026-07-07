@@ -484,6 +484,16 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   background: rgba(255,255,255,.25); border-radius: 10px; padding: 1px 6px; font-size: 10px;
 }
 .inbox-folder-btn:not(.active) .inbox-folder-count { background: var(--line); color: var(--slate); }
+
+.inbox-thread { display: flex; flex-direction: column; gap: 16px; margin-top: 14px; }
+.inbox-thread-message {
+  border: 1px solid var(--line); border-radius: var(--r); padding: 14px;
+}
+.inbox-thread-message-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
 .inbox-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
 .inbox-item { padding: 10px 12px; border-radius: var(--r); cursor: pointer; border-left: 3px solid transparent; }
 .inbox-item:hover { background: var(--paper); }
