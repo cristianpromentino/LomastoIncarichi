@@ -2,29 +2,34 @@ import { useState, useRef, useEffect } from 'react'
 
 const SIGNATURE_KEY = 'nodosuite:emailSignature'
 
-export default function ComposeBox({ defaultTo, defaultSubject, onSend, onCancel, sending }) {
+export default function ComposeBox({
+  defaultTo, defaultCc, defaultBcc, defaultSubject, defaultBodyHtml,
+  onSend, onSaveDraft, onCancel, onDelete, sending,
+}) {
   const [to, setTo] = useState(defaultTo || '')
-  const [cc, setCc] = useState('')
-  const [bcc, setBcc] = useState('')
-  const [showCcBcc, setShowCcBcc] = useState(false)
+  const [cc, setCc] = useState(defaultCc || '')
+  const [bcc, setBcc] = useState(defaultBcc || '')
+  const [showCcBcc, setShowCcBcc] = useState(!!(defaultCc || defaultBcc))
   const [subject, setSubject] = useState(defaultSubject || '')
   const [attachments, setAttachments] = useState([])
   const [signature, setSignature] = useState(() => localStorage.getItem(SIGNATURE_KEY) || '')
   const [showSignatureEdit, setShowSignatureEdit] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
 
   const editorRef = useRef(null)
   const fileRef = useRef(null)
   const initializedRef = useRef(false)
 
-  // Precompila il corpo con la firma salvata, una sola volta all'apertura
   useEffect(() => {
     if (!initializedRef.current && editorRef.current) {
       initializedRef.current = true
-      if (signature) {
+      if (defaultBodyHtml) {
+        // Riprendiamo una bozza esistente: contenuto già presente, firma già inclusa
+        editorRef.current.innerHTML = defaultBodyHtml
+      } else if (signature) {
         editorRef.current.innerHTML = `<br><br><div style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">${signature}</div>`
       }
       editorRef.current.focus()
-      // posiziona il cursore all'inizio, sopra la firma
       const range = document.createRange()
       const sel = window.getSelection()
       range.setStart(editorRef.current, 0)
@@ -32,7 +37,7 @@ export default function ComposeBox({ defaultTo, defaultSubject, onSend, onCancel
       sel.removeAllRanges()
       sel.addRange(range)
     }
-  }, [signature])
+  }, [signature, defaultBodyHtml])
 
   function formatta(comando, valore = null) {
     editorRef.current.focus()
@@ -67,12 +72,21 @@ export default function ComposeBox({ defaultTo, defaultSubject, onSend, onCancel
     setAttachments(a => a.filter((_, i) => i !== idx))
   }
 
-  function handleSend() {
-    const bodyHtml = editorRef.current.innerHTML
-    onSend({
-      to, cc, bcc, subject, bodyHtml,
+  function raccogliDati() {
+    return {
+      to, cc, bcc, subject, bodyHtml: editorRef.current.innerHTML,
       attachments: attachments.map(({ filename, mimeType, base64Data }) => ({ filename, mimeType, base64Data })),
-    })
+    }
+  }
+
+  function handleSend() {
+    onSend(raccogliDati())
+  }
+
+  async function handleSaveDraft() {
+    setSavingDraft(true)
+    await onSaveDraft(raccogliDati())
+    setSavingDraft(false)
   }
 
   return (
@@ -142,10 +156,15 @@ export default function ComposeBox({ defaultTo, defaultSubject, onSend, onCancel
       )}
 
       <div className="compose-footer">
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn btn-primary" onClick={handleSend} disabled={sending}>
             {sending ? 'Invio...' : 'Invia →'}
           </button>
+          {onSaveDraft && (
+            <button className="btn btn-outline" onClick={handleSaveDraft} disabled={sending || savingDraft}>
+              {savingDraft ? 'Salvataggio...' : 'Salva bozza'}
+            </button>
+          )}
           <button className="btn btn-outline" onClick={() => fileRef.current.click()} title="Allega file">
             📎 Allega
           </button>
@@ -154,7 +173,12 @@ export default function ComposeBox({ defaultTo, defaultSubject, onSend, onCancel
             Firma
           </button>
         </div>
-        <button className="btn btn-outline" onClick={onCancel} disabled={sending}>Annulla</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {onDelete && (
+            <button className="btn btn-danger" onClick={onDelete} disabled={sending}>Elimina bozza</button>
+          )}
+          <button className="btn btn-outline" onClick={onCancel} disabled={sending}>Annulla</button>
+        </div>
       </div>
     </div>
   )
