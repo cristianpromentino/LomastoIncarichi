@@ -39,6 +39,9 @@ export default function Layout({ page, navigate, profilo, collapsed, onToggleSid
           <button className={`nav-item ${page === 'dashboard' ? 'active' : ''}`} onClick={() => navigate('dashboard')}>
             <Icon icon={NAV_ICONS.dashboard} size="md" /> <span>Dashboard</span>
           </button>
+          <button className={`nav-item ${page === 'inbox' ? 'active' : ''}`} onClick={() => navigate('inbox')}>
+            <Icon icon={NAV_ICONS.inbox} size="md" /> <span>Inbox</span>
+          </button>
           <button className={`nav-item ${page === 'incarichi' || page === 'dettaglio' ? 'active' : ''}`} onClick={() => navigate('incarichi')}>
             <Icon icon={NAV_ICONS.incarichi} size="md" /> <span>Incarichi</span>
           </button>
@@ -56,9 +59,6 @@ export default function Layout({ page, navigate, profilo, collapsed, onToggleSid
           </button>
           <button className={`nav-item ${page === 'integrazioni' ? 'active' : ''}`} onClick={() => navigate('integrazioni')}>
             <Icon icon={NAV_ICONS.integrazioni} size="md" /> <span>Integrazioni</span>
-          </button>
-          <button className={`nav-item ${page === 'inbox' ? 'active' : ''}`} onClick={() => navigate('inbox')}>
-            <Icon icon={NAV_ICONS.inbox} size="md" /> <span>Inbox</span>
           </button>
         </nav>
         <div className="sidebar-footer">
