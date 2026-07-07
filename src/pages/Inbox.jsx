@@ -11,6 +11,7 @@ const MARK_READ_FUNCTION_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functio
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.modify',
 ].join(' ')
 
 export default function Inbox() {
