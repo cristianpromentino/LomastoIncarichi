@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import Icon from '../components/Icon'
-import { NAV_ICONS } from '../components/icons-map'
+import { NAV_ICONS, UTILITY_ICONS } from '../components/icons-map'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const REDIRECT_URI = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-oauth-callback'
+const SYNC_FUNCTION_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-sync'
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
@@ -14,11 +15,12 @@ const SCOPES = [
 export default function Inbox() {
   const { showToast } = useApp()
   const [connection, setConnection] = useState(null)
+  const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
     load()
-    // Gestisce il rientro dal flusso OAuth (?gmail_connected=1 nell'URL)
     const params = new URLSearchParams(window.location.search)
     if (params.get('gmail_connected') === '1') {
       showToast('Gmail collegato ✓', 'success')
@@ -32,8 +34,16 @@ export default function Inbox() {
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase.from('gmail_connection').select('*').maybeSingle()
-    setConnection(data || null)
+    const { data: conn } = await supabase.from('gmail_connection').select('*').maybeSingle()
+    setConnection(conn || null)
+    if (conn) {
+      const { data: msgs } = await supabase
+        .from('inbox_messages')
+        .select('*')
+        .order('received_at', { ascending: false })
+        .limit(50)
+      setMessages(msgs || [])
+    }
     setLoading(false)
   }
 
@@ -57,7 +67,22 @@ export default function Inbox() {
     const { error } = await supabase.from('gmail_connection').delete().eq('id', connection.id)
     if (error) { showToast('Errore: ' + error.message, 'error'); return }
     setConnection(null)
+    setMessages([])
     showToast('Gmail scollegato', 'info')
+  }
+
+  async function sincronizzaOra() {
+    setSyncing(true)
+    try {
+      const res = await fetch(SYNC_FUNCTION_URL, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore sincronizzazione')
+      showToast(data.nuovi > 0 ? `✓ ${data.nuovi} nuove email` : 'Nessuna nuova email', 'success')
+      await load()
+    } catch (e) {
+      showToast('Errore: ' + e.message, 'error')
+    }
+    setSyncing(false)
   }
 
   if (loading) {
@@ -71,6 +96,11 @@ export default function Inbox() {
           <div className="page-title">Inbox</div>
           <div className="page-subtitle">Email in arrivo dalla casella condivisa</div>
         </div>
+        {connection && (
+          <button className="btn btn-outline btn-sm" onClick={sincronizzaOra} disabled={syncing}>
+            {syncing ? <><Icon icon={UTILITY_ICONS.caricamento} size="sm" /> Sincronizzazione...</> : 'Aggiorna ora'}
+          </button>
+        )}
       </div>
 
       {!connection ? (
@@ -83,20 +113,44 @@ export default function Inbox() {
           <button className="btn btn-primary" onClick={connettiGmail}>Connetti Gmail</button>
         </div>
       ) : (
-        <div className="form-card" style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>
+        <>
+          <div className="form-card" style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+              <div>
                 <span className="badge badge-completato">Connesso</span>
+                <span style={{ fontSize: 13, color: 'var(--slate)', marginLeft: 10 }}>{connection.email_address}</span>
               </div>
-              <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 6 }}>{connection.email_address}</div>
+              <button className="btn btn-outline btn-sm" onClick={scollega}>Scollega</button>
             </div>
-            <button className="btn btn-outline btn-sm" onClick={scollega}>Scollega</button>
           </div>
-          <div style={{ marginTop: 20, fontSize: 13, color: 'var(--fog)', fontStyle: 'italic' }}>
-            La lista dei messaggi e la sincronizzazione automatica arrivano nella prossima fase.
+
+          <div className="table-wrap">
+            {messages.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon"><Icon icon={NAV_ICONS.inbox} size={36} /></div>
+                <div className="empty-text">Nessuna email ancora sincronizzata. Prova "Aggiorna ora".</div>
+              </div>
+            ) : (
+              <table>
+                <thead>
+                  <tr><th>Da</th><th>Oggetto</th><th>Anteprima</th><th>Ricevuta</th></tr>
+                </thead>
+                <tbody>
+                  {messages.map(m => (
+                    <tr key={m.id} style={{ fontWeight: m.is_read ? 400 : 700 }}>
+                      <td style={{ fontSize: 13 }}>{m.from_name || m.from_address}</td>
+                      <td style={{ fontSize: 13 }}>{m.subject}</td>
+                      <td style={{ fontSize: 12, color: 'var(--fog)', fontWeight: 400 }}>{m.snippet}</td>
+                      <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, fontWeight: 400 }}>
+                        {m.received_at ? new Date(m.received_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        </div>
+        </>
       )}
     </div>
   )
