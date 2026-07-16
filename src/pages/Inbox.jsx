@@ -318,7 +318,7 @@ export default function Inbox() {
           </div>
           <div className="inbox-sidebar-header-actions">
             <button className="btn btn-outline btn-sm" onClick={sincronizzaOra} disabled={syncing}>
-              {syncing ? <Icon icon={UTILITY_ICONS.caricamento} size="sm" /> : 'Aggiorna'}
+              {syncing ? <><Icon icon={UTILITY_ICONS.caricamento} size="sm" /> In aggiornamento</> : 'Aggiorna'}
             </button>
             <button className="btn btn-outline btn-sm" onClick={scollega}>Scollega</button>
           </div>
