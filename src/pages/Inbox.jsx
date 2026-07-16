@@ -37,6 +37,7 @@ export default function Inbox() {
   const [showReply, setShowReply] = useState(false)
   const [sending, setSending] = useState(false)
   const [threadMessages, setThreadMessages] = useState([])
+  const [attachmentsByMessage, setAttachmentsByMessage] = useState({})
 
   useEffect(() => {
     load()
@@ -140,11 +141,28 @@ export default function Inbox() {
     const lista = thread && thread.length > 0 ? thread : [m]
     setThreadMessages(lista)
 
+    const { data: allegati } = await supabase
+      .from('inbox_attachments')
+      .select('*')
+      .in('message_id', lista.map(x => x.id))
+    const raggruppati = {}
+    ;(allegati || []).forEach(a => {
+      if (!raggruppati[a.message_id]) raggruppati[a.message_id] = []
+      raggruppati[a.message_id].push(a)
+    })
+    setAttachmentsByMessage(raggruppati)
+
     // Rispondiamo sempre all'ultimo messaggio della conversazione, non a quello cliccato in lista
     const ultimo = lista[lista.length - 1]
     setCurrent(ultimo)
 
     lista.filter(x => !x.is_read).forEach(x => segnaLetta(x.id, true))
+  }
+
+  async function scaricaAllegato(att) {
+    const { data, error } = await supabase.storage.from('inbox-attachments').createSignedUrl(att.storage_path, 300)
+    if (error || !data) { showToast('Errore nel recupero del file', 'error'); return }
+    window.open(data.signedUrl, '_blank')
   }
 
   function apriBozza(b) {
@@ -293,7 +311,9 @@ export default function Inbox() {
       <div className="inbox-sidebar">
         <div className="inbox-sidebar-header">
           <div>
-            <span className="badge badge-completato">Connesso</span>
+            <span className={`badge ${connection.last_refresh_error ? 'badge-bloccato' : 'badge-completato'}`}>
+              {connection.last_refresh_error ? 'Scaduto' : 'Connesso'}
+            </span>
             <div style={{ fontSize: 11, color: 'var(--fog)', marginTop: 4, wordBreak: 'break-all' }}>{connection.email_address}</div>
           </div>
           <div className="inbox-sidebar-header-actions">
@@ -303,6 +323,12 @@ export default function Inbox() {
             <button className="btn btn-outline btn-sm" onClick={scollega}>Scollega</button>
           </div>
         </div>
+
+        {connection.last_refresh_error && (
+          <div className="inbox-expired-banner">
+            <strong>Collegamento Gmail scaduto.</strong> La sincronizzazione e l'invio email sono fermi. Premi "Scollega" e poi "Connetti Gmail" per ripristinarlo.
+          </div>
+        )}
 
         <div className="inbox-folders">
           {FOLDERS.map(f => {
@@ -416,6 +442,15 @@ export default function Inbox() {
                   ) : (
                     <div style={{ fontSize: 13, lineHeight: 1.7, whiteSpace: 'pre-wrap', color: 'var(--ink2)' }}>
                       {msg.body_text || msg.snippet || '(nessun contenuto)'}
+                    </div>
+                  )}
+                  {(attachmentsByMessage[msg.id] || []).length > 0 && (
+                    <div className="compose-attachments" style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+                      {attachmentsByMessage[msg.id].map(att => (
+                        <button key={att.id} className="compose-attachment-chip" onClick={() => scaricaAllegato(att)} style={{ cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--paper)' }}>
+                          <span>📎 {att.filename} <span style={{ color: 'var(--fog)' }}>({Math.round((att.size_bytes || 0) / 1024)} KB)</span></span>
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
