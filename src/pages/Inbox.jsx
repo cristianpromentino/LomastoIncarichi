@@ -448,7 +448,7 @@ export default function Inbox() {
                     <div className="compose-attachments" style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
                       {attachmentsByMessage[msg.id].map(att => (
                         <button key={att.id} className="compose-attachment-chip" onClick={() => scaricaAllegato(att)} style={{ cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--paper)' }}>
-                          <span>📎 {att.filename} <span style={{ color: 'var(--fog)' }}>({Math.round((att.size_bytes || 0) / 1024)} KB)</span></span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon icon={UTILITY_ICONS.allegato} size="sm" /> {att.filename} <span style={{ color: 'var(--fog)' }}>({Math.round((att.size_bytes || 0) / 1024)} KB)</span></span>
                         </button>
                       ))}
                     </div>

@@ -329,6 +329,7 @@ export default function IncaricoDetail() {
               <button className="modal-close" onClick={() => setShowEmail(false)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
             </div>
             <ComposeBox
+              key={showEmail ? (fornitoreCorrente?.id || 'no-fornitore') : 'closed'}
               defaultTo={fornitoreCorrente?.email || ''}
               defaultSubject={`Incarico — ${incarico.edifici?.nome || ''}`}
               onSend={inviaEmailFornitore}
