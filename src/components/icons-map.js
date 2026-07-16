@@ -26,6 +26,7 @@ import {
   CheckCircle,
   SmartphoneVibration,
   MenuDots,
+  Paperclip,
 } from '@solar-icons/react-perf/LineDuotone';
 
 import {
@@ -83,4 +84,5 @@ export const UTILITY_ICONS = {
   approvato: CheckCircle,
   whatsappNumero: SmartphoneVibration,
   altro: MenuDots,
+  allegato: Paperclip,
 };

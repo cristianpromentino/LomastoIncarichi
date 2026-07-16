@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import Icon from './Icon'
+import { UTILITY_ICONS } from './icons-map'
 
 const SIGNATURE_KEY = 'nodosuite:emailSignature'
 
@@ -138,7 +140,7 @@ export default function ComposeBox({
         <div className="compose-attachments">
           {attachments.map((a, i) => (
             <div key={i} className="compose-attachment-chip">
-              <span>📎 {a.filename} <span style={{ color: 'var(--fog)' }}>({Math.round(a.size / 1024)} KB)</span></span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon icon={UTILITY_ICONS.allegato} size="sm" /> {a.filename} <span style={{ color: 'var(--fog)' }}>({Math.round(a.size / 1024)} KB)</span></span>
               <button onClick={() => rimuoviAllegato(i)}>✕</button>
             </div>
           ))}
@@ -166,7 +168,7 @@ export default function ComposeBox({
             </button>
           )}
           <button className="btn btn-outline" onClick={() => fileRef.current.click()} title="Allega file">
-            📎 Allega
+            <Icon icon={UTILITY_ICONS.allegato} size="sm" /> Allega
           </button>
           <input ref={fileRef} type="file" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
           <button className="btn btn-outline" onClick={() => setShowSignatureEdit(s => !s)}>
