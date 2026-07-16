@@ -53,7 +53,7 @@ export default function IncaricoDetail() {
       supabase.from('incarichi').select('*, edifici(id,nome), fornitori(id,ragione_sociale,telefono_whatsapp), profili(nome_completo), condòmini(id,nome_completo,telefono,email)').eq('id', selectedId).single(),
       supabase.from('incarichi_log').select('*, profili(nome_completo)').eq('incarico_id', selectedId).order('created_at', { ascending: false }),
       supabase.from('edifici').select('id, nome').eq('stato', 'attivo').order('nome'),
-      supabase.from('fornitori').select('id, ragione_sociale, telefono_whatsapp').order('ragione_sociale'),
+      supabase.from('fornitori').select('id, ragione_sociale, telefono_whatsapp, email').order('ragione_sociale'),
     ])
     setIncarico(inc)
     setLog(lg || [])
@@ -75,6 +75,24 @@ export default function IncaricoDetail() {
       : ''
     const text = `Gentile ${fornitore},\n\nLa contattiamo per l'incarico relativo al condominio ${condominio}.\n\nAttività da eseguire: ${inc.descrizione}\nScadenza: ${scadenza}\n${segnalatoreLine}\nRestiamo in attesa di un suo gentile riscontro.\nGrazie!\n\nStudio Lomasto Amministrazioni`
     setWaText(text)
+  }
+
+  function buildEmailHtml(inc) {
+    const scadenza = inc.data_scadenza ? new Date(inc.data_scadenza).toLocaleDateString('it-IT') : 'non definita'
+    const fornitore = inc.fornitori?.ragione_sociale || 'Fornitore'
+    const condominio = inc.edifici?.nome || '—'
+    const segnalatoreNome = inc.condòmini?.nome_completo
+    const segnalatoreLine = segnalatoreNome
+      ? `<div>Segnalatore (riferimento): ${segnalatoreNome}${inc.segnalatore_telefono ? ' - ' + inc.segnalatore_telefono : ''}</div>`
+      : ''
+    return `<div>Gentile ${fornitore},</div><br>` +
+      `<div>La contattiamo per l'incarico relativo al condominio ${condominio}.</div><br>` +
+      `<div>Attività da eseguire: ${inc.descrizione}</div>` +
+      `<div>Scadenza: ${scadenza}</div>` +
+      segnalatoreLine + `<br>` +
+      `<div>Restiamo in attesa di un suo gentile riscontro.</div>` +
+      `<div>Grazie!</div><br>` +
+      `<div>Studio Lomasto Amministrazioni</div>`
   }
 
   function apriWhatsapp() {
@@ -332,6 +350,7 @@ export default function IncaricoDetail() {
               key={showEmail ? (fornitoreCorrente?.id || 'no-fornitore') : 'closed'}
               defaultTo={fornitoreCorrente?.email || ''}
               defaultSubject={`Incarico — ${incarico.edifici?.nome || ''}`}
+              defaultBodyHtml={buildEmailHtml(incarico)}
               onSend={inviaEmailFornitore}
               onCancel={() => setShowEmail(false)}
               sending={sendingEmail}
