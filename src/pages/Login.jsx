@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+const VERIFY_PASSWORD_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/verify-password'
 const SEND_CODE_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/send-2fa-code'
 const VERIFY_CODE_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/verify-2fa-code'
 
@@ -16,17 +17,18 @@ export default function Login() {
     if (!email || !password) { setError('Inserisci email e password'); return }
     setLoading(true); setError('')
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
-    if (authError) {
-      setError('Credenziali non valide. Riprova.')
-      setLoading(false)
-      return
-    }
-    // La password è corretta, ma non entriamo ancora: usciamo subito, la
-    // sessione vera si apre solo dopo aver verificato il codice via email.
-    await supabase.auth.signOut()
-
     try {
+      // Verifica la password sul server: il browser non fa mai un login vero
+      // a questo punto, quindi la sessione dell'app resta invariata (nessun
+      // "lampo" che smonterebbe questa schermata prima del codice).
+      const resPw = await fetch(VERIFY_PASSWORD_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const dataPw = await resPw.json()
+      if (!resPw.ok) throw new Error(dataPw.error || 'Credenziali non valide')
+
       const res = await fetch(SEND_CODE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,7 +38,7 @@ export default function Login() {
       if (!res.ok) throw new Error(data.error || 'Errore invio codice')
       setStep('code')
     } catch (e) {
-      setError('Errore invio codice: ' + e.message)
+      setError(e.message)
     }
     setLoading(false)
   }
