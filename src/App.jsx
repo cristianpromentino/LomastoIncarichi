@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import { supabase } from './lib/supabase'
 import Login from './pages/Login'
 import GmailRecovery from './pages/GmailRecovery'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Incarichi from './pages/Incarichi'
 import Verbali from './pages/Verbali'
@@ -23,6 +24,7 @@ export default function App() {
   const [session, setSession] = useState(null)
   const [profilo, setProfilo] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [modalitaRecuperoPassword, setModalitaRecuperoPassword] = useState(false)
   const [page, setPage] = useState('dashboard')
   const [selectedId, setSelectedId] = useState(null)
   const [toasts, setToasts] = useState([])
@@ -48,6 +50,11 @@ export default function App() {
       else setLoading(false)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'PASSWORD_RECOVERY') {
+        setModalitaRecuperoPassword(true)
+        setLoading(false)
+        return
+      }
       setSession(session)
       if (session) loadProfilo(session.user.id)
       else {
@@ -104,6 +111,8 @@ export default function App() {
   if (paramsRecupero.get('recupero') === 'gmail' && paramsRecupero.get('chiave') === import.meta.env.VITE_RECOVERY_KEY) {
     return <GmailRecovery />
   }
+
+  if (modalitaRecuperoPassword) return <ResetPassword />
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ink)' }}>
