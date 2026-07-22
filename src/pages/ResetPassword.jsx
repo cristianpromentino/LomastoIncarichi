@@ -29,7 +29,7 @@ export default function ResetPassword() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <div className="login-logo">Nodo<span>Suite</span></div>
+        <img src="/NodoSuite_logo.svg" alt="NodoSuite" className="login-logo-img" />
         <div className="login-sub" style={{ marginBottom: 24 }}>Imposta una nuova password</div>
         {error && <div className="login-error">{error}</div>}
 

@@ -30,7 +30,7 @@ export default function GmailRecovery() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <div className="login-logo">Nodo<span>Suite</span></div>
+        <img src="/NodoSuite_logo.svg" alt="NodoSuite" className="login-logo-img" />
         <div className="login-sub" style={{ marginBottom: 24 }}>Ripristino collegamento Gmail</div>
         <p style={{ fontSize: 13, color: 'var(--fog)', marginBottom: 20, lineHeight: 1.6 }}>
           Questa pagina serve solo per ricollegare la casella Gmail condivisa quando il collegamento è scaduto

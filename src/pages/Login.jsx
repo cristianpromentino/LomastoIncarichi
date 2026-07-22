@@ -111,7 +111,7 @@ export default function Login() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <div className="login-logo">Nodo<span>Suite</span></div>
+        <img src="/NodoSuite_logo.svg" alt="NodoSuite" className="login-logo-img" />
         <div className="login-sub">Tutta la gestione condominiale. In un unico Nodo.</div>
         {error && <div className="login-error">{error}</div>}
 
