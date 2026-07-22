@@ -156,7 +156,12 @@ export default function Inbox() {
     const ultimo = lista[lista.length - 1]
     setCurrent(ultimo)
 
-    lista.filter(x => !x.is_read).forEach(x => segnaLetta(x.id, true))
+    // Una alla volta (non tutte insieme): se ci sono più messaggi non letti nello
+    // stesso thread, evita che più richieste tentino di rinnovare il token Gmail
+    // nello stesso istante, che può causare un conflitto e un errore spurio.
+    for (const x of lista.filter(m => !m.is_read)) {
+      await segnaLetta(x.id, true)
+    }
   }
 
   async function scaricaAllegato(att) {
