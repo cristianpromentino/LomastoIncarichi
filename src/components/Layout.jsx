@@ -26,7 +26,7 @@ export default function Layout({ page, navigate, profilo, collapsed, onToggleSid
         </button>
 
         <div className="sidebar-brand">
-          <div className="sidebar-logo">Nodo<span>Suite</span></div>
+          <img src="/NodoSuite_logo.svg" alt="NodoSuite" className="sidebar-logo-img" />
           <div className="sidebar-tag">Tutta la gestione condominiale. In un unico Nodo.</div>
         </div>
         {profilo && (
