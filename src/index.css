@@ -596,6 +596,11 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   .compose-footer > div { flex-wrap: wrap; }
 }
 
+.auth-page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--paper); padding: 24px; box-sizing: border-box;
+}
+
 /* LOG */
 .log-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .log-item { border-left: 3px solid var(--line); padding: 8px 12px; }
@@ -616,6 +621,11 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 .login-logo span { color: var(--primary); }
 .login-sub { font-size: 12px; color: var(--fog); margin-bottom: 28px; }
 .login-error { background: #fee2e2; color: #991b1b; padding: 10px 12px; border-radius: var(--r); font-size: 13px; margin-bottom: 16px; }
+.login-link-btn {
+  background: none; border: none; color: var(--primary); cursor: pointer;
+  font-family: 'Inter', sans-serif; font-size: 12px; padding: 4px 0;
+}
+.login-link-btn:disabled { color: var(--fog); cursor: default; }
 
 /* EMPTY STATE */
 .empty-state { text-align: center; padding: 48px 20px; color: var(--fog); }
