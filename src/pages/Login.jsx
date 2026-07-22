@@ -6,12 +6,13 @@ const SEND_CODE_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/sen
 const VERIFY_CODE_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/verify-2fa-code'
 
 export default function Login() {
-  const [step, setStep] = useState('password') // 'password' | 'code'
+  const [step, setStep] = useState('password') // 'password' | 'code' | 'recupero'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [recuperoInviato, setRecuperoInviato] = useState(false)
 
   async function handleLogin() {
     if (!email || !password) { setError('Inserisci email e password'); return }
@@ -88,6 +89,23 @@ export default function Login() {
     setError('')
   }
 
+  async function handleRecuperoPassword() {
+    if (!email) { setError('Inserisci prima la tua email qui sopra'); return }
+    setLoading(true); setError('')
+    try {
+      const { error: recError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      })
+      if (recError) throw new Error('Errore invio email di recupero')
+      setRecuperoInviato(true)
+    } catch (e) {
+      setError(e.message)
+    }
+    setLoading(false)
+  }
+
+  const [mostraRecupero, setMostraRecupero] = useState(false)
+
   function handleKey(e, azione) { if (e.key === 'Enter') azione() }
 
   return (
@@ -97,7 +115,35 @@ export default function Login() {
         <div className="login-sub">Tutta la gestione condominiale. In un unico Nodo.</div>
         {error && <div className="login-error">{error}</div>}
 
-        {step === 'password' ? (
+        {mostraRecupero ? (
+          <>
+            {recuperoInviato ? (
+              <>
+                <div style={{ fontSize: 13, color: 'var(--ink2)', marginBottom: 20, lineHeight: 1.6 }}>
+                  Se l'indirizzo <strong>{email}</strong> corrisponde a un account NodoSuite, riceverai a breve un'email con il link per impostare una nuova password.
+                </div>
+                <button className="login-link-btn" onClick={() => { setMostraRecupero(false); setRecuperoInviato(false) }}>← Torna al login</button>
+              </>
+            ) : (
+              <>
+                <div className="form-group" style={{ marginBottom: 20 }}>
+                  <label className="form-label">Email</label>
+                  <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 10 }}>
+                    Inserisci la tua email: ti manderemo un link per impostare una nuova password.
+                  </div>
+                  <input
+                    className="form-input" type="email" placeholder="nome@lomastoamministrazioni.it"
+                    value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => handleKey(e, handleRecuperoPassword)}
+                  />
+                </div>
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }} onClick={handleRecuperoPassword} disabled={loading}>
+                  {loading ? 'Invio in corso...' : 'Invia link di recupero'}
+                </button>
+                <button className="login-link-btn" onClick={() => setMostraRecupero(false)} disabled={loading}>← Torna al login</button>
+              </>
+            )}
+          </>
+        ) : step === 'password' ? (
           <>
             <div className="form-group" style={{ marginBottom: 14 }}>
               <label className="form-label">Email</label>
@@ -116,6 +162,9 @@ export default function Login() {
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleLogin} disabled={loading}>
               {loading ? 'Verifica in corso...' : 'Accedi'}
             </button>
+            <div style={{ textAlign: 'center', marginTop: 12 }}>
+              <button className="login-link-btn" onClick={() => setMostraRecupero(true)} disabled={loading}>Password dimenticata?</button>
+            </div>
           </>
         ) : (
           <>
