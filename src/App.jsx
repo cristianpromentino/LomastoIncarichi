@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import { supabase } from './lib/supabase'
 import Login from './pages/Login'
+import GmailRecovery from './pages/GmailRecovery'
 import Dashboard from './pages/Dashboard'
 import Incarichi from './pages/Incarichi'
 import Verbali from './pages/Verbali'
@@ -95,6 +96,14 @@ export default function App() {
   }
 
   function isAdmin() { return profilo?.ruolo === 'amministratore' || profilo?.ruolo === 'jolly' }
+
+  // Via di fuga indipendente dal login normale: se Gmail scade e nessuno
+  // riesce più ad accedere (i codici 2FA passano da lì), questo link
+  // protetto da chiave permette di ricollegarlo senza essere già dentro.
+  const paramsRecupero = new URLSearchParams(window.location.search)
+  if (paramsRecupero.get('recupero') === 'gmail' && paramsRecupero.get('chiave') === import.meta.env.VITE_RECOVERY_KEY) {
+    return <GmailRecovery />
+  }
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ink)' }}>
