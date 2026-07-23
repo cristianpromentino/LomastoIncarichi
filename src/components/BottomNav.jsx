@@ -12,10 +12,11 @@ import { NAV_ICONS, NAV_LABELS, UTILITY_ICONS } from './icons-map'
 const MAIN_TABS = [
   { route: 'dashboard', label: NAV_LABELS.dashboard, icon: NAV_ICONS.dashboard },
   { route: 'inbox', label: NAV_LABELS.inbox, icon: NAV_ICONS.inbox },
-  { route: 'incarichi', label: NAV_LABELS.incarichi, icon: NAV_ICONS.incarichi, matchAlso: ['dettaglio'] },
+  { route: 'task', label: NAV_LABELS.task, icon: NAV_ICONS.task, matchAlso: ['task-dettaglio'] },
 ]
 
 const MORE_ITEMS = [
+  { route: 'incarichi', label: NAV_LABELS.incarichi, icon: NAV_ICONS.incarichi },
   { route: 'verbali', label: NAV_LABELS.verbali, icon: NAV_ICONS.verbali },
   { route: 'edifici', label: NAV_LABELS.condomini, icon: NAV_ICONS.condomini },
   { route: 'fornitori', label: NAV_LABELS.fornitori, icon: NAV_ICONS.fornitori },

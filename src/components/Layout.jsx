@@ -42,6 +42,9 @@ export default function Layout({ page, navigate, profilo, collapsed, onToggleSid
           <button className={`nav-item ${page === 'inbox' ? 'active' : ''}`} onClick={() => navigate('inbox')}>
             <Icon icon={NAV_ICONS.inbox} size="md" /> <span>Inbox</span>
           </button>
+          <button className={`nav-item ${page === 'task' || page === 'task-dettaglio' ? 'active' : ''}`} onClick={() => navigate('task')}>
+            <Icon icon={NAV_ICONS.task} size="md" /> <span>Task</span>
+          </button>
           <button className={`nav-item ${page === 'incarichi' || page === 'dettaglio' ? 'active' : ''}`} onClick={() => navigate('incarichi')}>
             <Icon icon={NAV_ICONS.incarichi} size="md" /> <span>Incarichi</span>
           </button>
