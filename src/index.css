@@ -610,6 +610,11 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 }
 .task-assegnatario-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
 
+.dashboard-split { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 900px) {
+  .dashboard-split { grid-template-columns: 1fr; }
+}
+
 /* LOG */
 .log-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .log-item { border-left: 3px solid var(--line); padding: 8px 12px; }
