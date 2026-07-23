@@ -25,7 +25,7 @@ export default function TaskModal({ profili, defaultTitolo, defaultDescrizione, 
   useEffect(() => {
     setPersonaRiferimentoId('')
     if (!edificioId) { setPersone([]); return }
-    supabase.from('condòmini').select('id, nome_completo').eq('edificio_id', edificioId).order('nome_completo')
+    supabase.from('condòmini').select('id, nome_completo').eq('condominio_id', edificioId).eq('stato', 'attivo').order('nome_completo')
       .then(({ data }) => setPersone(data || []))
   }, [edificioId])
 
@@ -76,7 +76,7 @@ export default function TaskModal({ profili, defaultTitolo, defaultDescrizione, 
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">Persona / Riferimento</label>
+            <label className="form-label">Riferimento</label>
             <select className="form-select" value={personaRiferimentoId} onChange={e => setPersonaRiferimentoId(e.target.value)} disabled={!edificioId}>
               <option value="">{edificioId ? '— Nessuna —' : 'Scegli prima il condominio'}</option>
               {persone.map(p => <option key={p.id} value={p.id}>{p.nome_completo}</option>)}
