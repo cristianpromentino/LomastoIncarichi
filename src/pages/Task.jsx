@@ -35,12 +35,18 @@ export default function Task() {
   const [search, setSearch] = useState('')
   const [showNuovo, setShowNuovo] = useState(false)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    if (sessionStorage.getItem('nodosuite:openNewTask') === '1') {
+      sessionStorage.removeItem('nodosuite:openNewTask')
+      setShowNuovo(true)
+    }
+  }, [])
 
   async function load() {
     setLoading(true)
     const [{ data: task }, { data: assegnazioni }, { data: prof }] = await Promise.all([
-      supabase.from('attivita_interne').select('*, edifici(nome)').order('data_scadenza', { ascending: true, nullsFirst: false }),
+      supabase.from('attivita_interne').select('*, edifici(nome)').order('created_at', { ascending: false }),
       supabase.from('attivita_assegnatari').select('*, profili(id, nome_completo)'),
       supabase.from('profili').select('id, nome_completo').order('nome_completo'),
     ])
@@ -83,6 +89,19 @@ export default function Task() {
       await supabase.from('attivita_assegnatari').insert(
         payload.assegnatari.map(pid => ({ attivita_id: data.id, profilo_id: pid }))
       )
+    }
+
+    if (payload.files?.length) {
+      for (const file of payload.files) {
+        const path = `${data.id}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+        const { error: upErr } = await supabase.storage.from('task-allegati').upload(path, file)
+        if (!upErr) {
+          await supabase.from('attivita_allegati').insert({
+            attivita_id: data.id, filename: file.name, mime_type: file.type, size_bytes: file.size,
+            storage_path: path, caricato_da: profilo?.id,
+          })
+        }
+      }
     }
     showToast('Task creato ✓', 'success')
     setShowNuovo(false)
