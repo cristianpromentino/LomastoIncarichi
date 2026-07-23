@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import Icon from '../components/Icon'
 import { NAV_ICONS } from '../components/icons-map'
+import TaskModal from '../components/TaskModal'
 
 const PRIORITA_LABEL = { bassa: 'Bassa', media: 'Media', alta: 'Alta', urgente: 'Urgente' }
 const PRIORITA_COLORI = {
@@ -72,6 +73,8 @@ export default function Task() {
       data_inizio: payload.data_inizio || null,
       data_scadenza: payload.data_scadenza || null,
       edificio_id: payload.edificio_id || null,
+      persona_riferimento_id: payload.persona_riferimento_id || null,
+      origine_message_id: payload.origine_message_id || null,
       creato_da: profilo?.id,
     }).select().single()
     if (error) { showToast('Errore: ' + error.message, 'error'); return }
@@ -150,86 +153,8 @@ export default function Task() {
       </div>
 
       {showNuovo && (
-        <NuovoTaskModal profili={profili} onClose={() => setShowNuovo(false)} onSave={creaTask} />
+        <TaskModal profili={profili} onClose={() => setShowNuovo(false)} onSave={creaTask} />
       )}
-    </div>
-  )
-}
-
-function NuovoTaskModal({ profili, onClose, onSave }) {
-  const [titolo, setTitolo] = useState('')
-  const [descrizione, setDescrizione] = useState('')
-  const [priorita, setPriorita] = useState('media')
-  const [area, setArea] = useState('')
-  const [dataInizio, setDataInizio] = useState('')
-  const [dataScadenza, setDataScadenza] = useState('')
-  const [assegnatari, setAssegnatari] = useState([])
-
-  function toggleAssegnatario(id) {
-    setAssegnatari(a => a.includes(id) ? a.filter(x => x !== id) : [...a, id])
-  }
-
-  function handleSalva() {
-    if (!titolo.trim()) return
-    onSave({ titolo, descrizione, priorita, area, data_inizio: dataInizio, data_scadenza: dataScadenza, assegnatari })
-  }
-
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ width: 'min(560px, 96vw)' }}>
-        <div className="modal-header">
-          <div className="modal-title">Nuovo task</div>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Titolo</label>
-          <input className="form-input" value={titolo} onChange={e => setTitolo(e.target.value)} autoFocus />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Descrizione</label>
-          <textarea className="form-textarea" value={descrizione} onChange={e => setDescrizione(e.target.value)} />
-        </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Priorità</label>
-            <select className="form-select" value={priorita} onChange={e => setPriorita(e.target.value)}>
-              {Object.entries(PRIORITA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Area</label>
-            <input className="form-input" value={area} onChange={e => setArea(e.target.value)} placeholder="es. Contabilità" />
-          </div>
-        </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Data inizio</label>
-            <input className="form-input" type="date" value={dataInizio} onChange={e => setDataInizio(e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Scadenza</label>
-            <input className="form-input" type="date" value={dataScadenza} onChange={e => setDataScadenza(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Assegna a</label>
-          <div className="task-assegnatari-picker">
-            {profili.map(p => (
-              <label key={p.id} className={`task-assegnatario-chip ${assegnatari.includes(p.id) ? 'active' : ''}`}>
-                <input type="checkbox" checked={assegnatari.includes(p.id)} onChange={() => toggleAssegnatario(p.id)} style={{ display: 'none' }} />
-                {p.nome_completo}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="form-actions">
-          <button className="btn btn-outline" onClick={onClose}>Annulla</button>
-          <button className="btn btn-primary" onClick={handleSalva}>Crea task</button>
-        </div>
-      </div>
     </div>
   )
 }

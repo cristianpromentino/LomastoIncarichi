@@ -4,6 +4,7 @@ import { useApp } from '../App'
 import Icon from '../components/Icon'
 import { NAV_ICONS, UTILITY_ICONS, ACTION_ICONS } from '../components/icons-map'
 import ComposeBox from '../components/ComposeBox'
+import TaskModal from '../components/TaskModal'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const REDIRECT_URI = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-oauth-callback'
@@ -24,7 +25,7 @@ const FOLDERS = [
 ]
 
 export default function Inbox() {
-  const { showToast } = useApp()
+  const { showToast, profilo } = useApp()
   const [connection, setConnection] = useState(null)
   const [messages, setMessages] = useState([])
   const [drafts, setDrafts] = useState([])
@@ -35,6 +36,8 @@ export default function Inbox() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [showReply, setShowReply] = useState(false)
+  const [showTaskModal, setShowTaskModal] = useState(false)
+  const [profili, setProfili] = useState([])
   const [sending, setSending] = useState(false)
   const [threadMessages, setThreadMessages] = useState([])
   const [attachmentsByMessage, setAttachmentsByMessage] = useState({})
@@ -57,12 +60,14 @@ export default function Inbox() {
     const { data: conn } = await supabase.from('gmail_connection').select('*').maybeSingle()
     setConnection(conn || null)
     if (conn) {
-      const [{ data: msgs }, { data: bozze }] = await Promise.all([
+      const [{ data: msgs }, { data: bozze }, { data: prof }] = await Promise.all([
         supabase.from('inbox_messages').select('*').order('received_at', { ascending: false }).limit(100),
         supabase.from('inbox_drafts').select('*').order('updated_at', { ascending: false }),
+        supabase.from('profili').select('id, nome_completo').order('nome_completo'),
       ])
       setMessages(msgs || [])
       setDrafts(bozze || [])
+      setProfili(prof || [])
     }
     setLoading(false)
   }
@@ -219,6 +224,31 @@ export default function Inbox() {
     setShowReply(false)
     setCurrentDraft(null)
     await load()
+  }
+
+  async function creaTaskDaEmail(payload) {
+    const { data, error } = await supabase.from('attivita_interne').insert({
+      titolo: payload.titolo,
+      descrizione: payload.descrizione || null,
+      priorita: payload.priorita,
+      area: payload.area || null,
+      stato: 'da_fare',
+      data_inizio: payload.data_inizio || null,
+      data_scadenza: payload.data_scadenza || null,
+      edificio_id: payload.edificio_id || null,
+      persona_riferimento_id: payload.persona_riferimento_id || null,
+      origine_message_id: payload.origine_message_id || null,
+      creato_da: profilo?.id,
+    }).select().single()
+    if (error) { showToast('Errore: ' + error.message, 'error'); return }
+
+    if (payload.assegnatari?.length) {
+      await supabase.from('attivita_assegnatari').insert(
+        payload.assegnatari.map(pid => ({ attivita_id: data.id, profilo_id: pid }))
+      )
+    }
+    showToast('Task creato dall\'email ✓', 'success')
+    setShowTaskModal(false)
   }
 
   async function eliminaBozza(id) {
@@ -470,8 +500,11 @@ export default function Inbox() {
                   </div>
                 )}
                 {!showReply ? (
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <button className="btn btn-primary" onClick={() => setShowReply(true)}>← Rispondi</button>
+                    <button className="btn btn-outline" onClick={() => setShowTaskModal(true)}>
+                      <Icon icon={NAV_ICONS.task} size="sm" /> Crea task
+                    </button>
                     <button className="btn btn-outline" onClick={() => segnaLetta(current.id, false)}>
                       Segna come non letta
                     </button>
@@ -510,6 +543,17 @@ export default function Inbox() {
           </div>
         )}
       </div>
+
+      {showTaskModal && current && (
+        <TaskModal
+          profili={profili}
+          defaultTitolo={current.subject}
+          defaultDescrizione={current.body_text || current.snippet || ''}
+          origineMessageId={current.id}
+          onClose={() => setShowTaskModal(false)}
+          onSave={creaTaskDaEmail}
+        />
+      )}
     </div>
   )
 }

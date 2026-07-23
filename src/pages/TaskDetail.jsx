@@ -15,15 +15,29 @@ export default function TaskDetail() {
   const [log, setLog] = useState([])
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({})
+  const [edifici, setEdifici] = useState([])
+  const [persone, setPersone] = useState([])
   const [nuovaNota, setNuovaNota] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { loadAll() }, [selectedId])
 
+  useEffect(() => {
+    if (!editing) return
+    supabase.from('edifici').select('id, nome').eq('stato', 'attivo').order('nome').then(({ data }) => setEdifici(data || []))
+  }, [editing])
+
+  useEffect(() => {
+    if (!editing) return
+    if (!form.edificio_id) { setPersone([]); return }
+    supabase.from('condòmini').select('id, nome_completo').eq('edificio_id', form.edificio_id).order('nome_completo')
+      .then(({ data }) => setPersone(data || []))
+  }, [editing, form.edificio_id])
+
   async function loadAll() {
     setLoading(true)
     const [{ data: t }, { data: prof }, { data: ass }, { data: lg }] = await Promise.all([
-      supabase.from('attivita_interne').select('*, edifici(id,nome), incarichi(id,descrizione), verbali(id,titolo)').eq('id', selectedId).single(),
+      supabase.from('attivita_interne').select('*, edifici(id,nome), incarichi(id,descrizione), verbali(id,titolo), condòmini(id,nome_completo)').eq('id', selectedId).single(),
       supabase.from('profili').select('id, nome_completo').order('nome_completo'),
       supabase.from('attivita_assegnatari').select('*, profili(id,nome_completo)').eq('attivita_id', selectedId),
       supabase.from('attivita_log').select('*, profili(nome_completo)').eq('attivita_id', selectedId).order('created_at', { ascending: false }),
@@ -36,6 +50,7 @@ export default function TaskDetail() {
       setForm({
         titolo: t.titolo, descrizione: t.descrizione || '', priorita: t.priorita, area: t.area || '',
         stato: t.stato, data_inizio: t.data_inizio || '', data_scadenza: t.data_scadenza || '',
+        edificio_id: t.edificio_id || '', persona_riferimento_id: t.persona_riferimento_id || '',
       })
     }
     setLoading(false)
@@ -43,7 +58,10 @@ export default function TaskDetail() {
 
   async function salva() {
     const { error } = await supabase.from('attivita_interne').update({
-      ...form, updated_at: new Date().toISOString(),
+      ...form,
+      edificio_id: form.edificio_id || null,
+      persona_riferimento_id: form.persona_riferimento_id || null,
+      updated_at: new Date().toISOString(),
     }).eq('id', selectedId)
     if (error) { showToast('Errore: ' + error.message, 'error'); return }
     showToast('Task aggiornato ✓', 'success')
@@ -86,6 +104,7 @@ export default function TaskDetail() {
           <div className="page-title">{task.titolo}</div>
           <div className="page-subtitle">
             {task.edifici?.nome && `${task.edifici.nome} · `}
+            {task.condòmini?.nome_completo && `Rif: ${task.condòmini.nome_completo} · `}
             {task.incarichi?.descrizione && `Da incarico: ${task.incarichi.descrizione} · `}
             {task.verbali?.titolo && `Da verbale: ${task.verbali.titolo}`}
           </div>
@@ -107,6 +126,24 @@ export default function TaskDetail() {
               <label className="form-label">Descrizione</label>
               <textarea className="form-textarea" value={form.descrizione} onChange={e => setForm(f => ({ ...f, descrizione: e.target.value }))} />
             </div>
+
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Condominio</label>
+                <select className="form-select" value={form.edificio_id} onChange={e => setForm(f => ({ ...f, edificio_id: e.target.value, persona_riferimento_id: '' }))}>
+                  <option value="">— Nessuno —</option>
+                  {edifici.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Persona / Riferimento</label>
+                <select className="form-select" value={form.persona_riferimento_id} onChange={e => setForm(f => ({ ...f, persona_riferimento_id: e.target.value }))} disabled={!form.edificio_id}>
+                  <option value="">{form.edificio_id ? '— Nessuna —' : 'Scegli prima il condominio'}</option>
+                  {persone.map(p => <option key={p.id} value={p.id}>{p.nome_completo}</option>)}
+                </select>
+              </div>
+            </div>
+
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">Priorità</label>
@@ -140,6 +177,8 @@ export default function TaskDetail() {
           <table className="kv-table">
             <tbody>
               <tr><td style={{ width: '30%', fontWeight: 600, color: 'var(--slate)' }}>Descrizione</td><td>{task.descrizione || '—'}</td></tr>
+              <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Condominio</td><td>{task.edifici?.nome || '—'}</td></tr>
+              <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Persona / Riferimento</td><td>{task.condòmini?.nome_completo || '—'}</td></tr>
               <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Priorità</td><td>{PRIORITA_LABEL[task.priorita]}</td></tr>
               <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Stato</td><td>{STATO_LABEL[task.stato]}</td></tr>
               <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Data inizio</td><td>{task.data_inizio ? new Date(task.data_inizio).toLocaleDateString('it-IT') : '—'}</td></tr>
